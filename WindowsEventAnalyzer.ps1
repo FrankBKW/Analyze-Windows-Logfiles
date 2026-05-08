@@ -305,7 +305,8 @@ function Invoke-ComputerEventScan {
     param(
         [string]$Computer,
         $ProgressUI,
-        [int]$MaxPerLog = 500
+        [int]$MaxPerLog = 500,
+        [System.Management.Automation.PSCredential]$Credential = $null
     )
 
     $found = [System.Collections.Generic.List[PSObject]]::new()
@@ -317,7 +318,9 @@ function Invoke-ComputerEventScan {
     [System.Windows.Forms.Application]::DoEvents()
 
     try {
-        $allLogs = Get-WinEvent -ListLog * -ComputerName $Computer -ErrorAction Stop |
+        $listParams = @{ ListLog = '*'; ComputerName = $Computer; ErrorAction = 'Stop' }
+        if ($Credential) { $listParams.Credential = $Credential }
+        $allLogs = Get-WinEvent @listParams |
                    Where-Object { $_.RecordCount -gt 0 -and $_.IsEnabled } |
                    Sort-Object RecordCount -Descending
     } catch {
@@ -342,10 +345,9 @@ function Invoke-ComputerEventScan {
         [System.Windows.Forms.Application]::DoEvents()
 
         try {
-            $sample = Get-WinEvent -LogName $log.LogName `
-                                   -MaxEvents $MaxPerLog `
-                                   -ComputerName $Computer `
-                                   -ErrorAction Stop
+            $sampleParams = @{ LogName = $log.LogName; MaxEvents = $MaxPerLog; ComputerName = $Computer; ErrorAction = 'Stop' }
+            if ($Credential) { $sampleParams.Credential = $Credential }
+            $sample = Get-WinEvent @sampleParams
 
             # Nach ID gruppieren (gleiche ID kann mehrere Provider haben)
             $grouped = $sample | Group-Object -Property Id
@@ -398,7 +400,8 @@ function Invoke-DocumentedIDsScan {
     param(
         [string]$Computer,
         $ProgressUI,
-        [string[]]$LogNames
+        [string[]]$LogNames,
+        [System.Management.Automation.PSCredential]$Credential = $null
     )
 
     $found = [System.Collections.Generic.List[PSObject]]::new()
@@ -409,7 +412,9 @@ function Invoke-DocumentedIDsScan {
     foreach ($logName in $LogNames) {
         if ($script:scanCancelled) { return $found }
         try {
-            $logInfo = Get-WinEvent -ListLog $logName -ComputerName $Computer -ErrorAction Stop
+            $logInfoParams = @{ ListLog = $logName; ComputerName = $Computer; ErrorAction = 'Stop' }
+            if ($Credential) { $logInfoParams.Credential = $Credential }
+            $logInfo = Get-WinEvent @logInfoParams
             foreach ($p in $logInfo.ProviderNames) {
                 [void]$providers.Add($p)
             }
@@ -435,7 +440,9 @@ function Invoke-DocumentedIDsScan {
         [System.Windows.Forms.Application]::DoEvents()
 
         try {
-            $prov = Get-WinEvent -ListProvider $provName -ComputerName $Computer -ErrorAction Stop
+            $provParams = @{ ListProvider = $provName; ComputerName = $Computer; ErrorAction = 'Stop' }
+            if ($Credential) { $provParams.Credential = $Credential }
+            $prov = Get-WinEvent @provParams
             foreach ($evt in $prov.Events) {
                 # Zu welchem Log gehört dieses Event?
                 $targetLog = $null
@@ -592,7 +599,7 @@ try {
     if (-not $script:scanCancelled) {
         $relevantLogs = @($discovered | Select-Object -ExpandProperty Log -Unique)
         if ($relevantLogs.Count -gt 0) {
-            $documented = Invoke-DocumentedIDsScan -Computer $startupComputer -ProgressUI $progUI -LogNames $relevantLogs
+            $documented = Invoke-DocumentedIDsScan -Computer $startupComputer -ProgressUI $progUI -LogNames $relevantLogs -Credential $null
             $addedDocs  = Merge-DiscoveredEvents -Discovered $documented
         }
     }
@@ -619,7 +626,7 @@ try {
 # ════════════════════════════════════════════════════════════
 $formMain = New-Object System.Windows.Forms.Form
 $formMain.Text            = "Windows Event Viewer – Abfrage-Tool"
-$formMain.Size            = New-Object System.Drawing.Size(920, 780)
+$formMain.Size            = New-Object System.Drawing.Size(920, 830)
 $formMain.StartPosition   = "CenterScreen"
 $formMain.BackColor       = $clrBg
 $formMain.FormBorderStyle = "FixedSingle"
@@ -651,7 +658,7 @@ $lblSubtitle.BackColor = $clrAccent
 $pnlTitle.Controls.Add($lblSubtitle)
 
 # ── Sektion: Filter-Optionen ──────────────────────────────────
-$pnlOptions = New-SectionPanel 15 75 885 90 "⚙  Abfrage-Optionen"
+$pnlOptions = New-SectionPanel 15 75 885 140 "⚙  Abfrage-Optionen"
 $formMain.Controls.Add($pnlOptions)
 
 # Zeitraum
@@ -696,8 +703,45 @@ $lblHint = New-Label "ℹ  Leer lassen = lokaler Computer  ·  'Scan' aktualisie
 $lblHint.Font = $fontSmall
 $pnlOptions.Controls.Add($lblHint)
 
+# ── Credentials (Zeile 2) ─────────────────────────────────────
+$pnlOptions.Controls.Add((New-Label "Domain:" 10 70 55 20))
+$txtDomain = New-Object System.Windows.Forms.TextBox
+$txtDomain.Location  = New-Object System.Drawing.Point(68, 68)
+$txtDomain.Size      = New-Object System.Drawing.Size(120, 22)
+$txtDomain.Font      = $fontNormal
+$pnlOptions.Controls.Add($txtDomain)
+
+$pnlOptions.Controls.Add((New-Label "Benutzer:" 205 70 65 20))
+$txtUser = New-Object System.Windows.Forms.TextBox
+$txtUser.Location  = New-Object System.Drawing.Point(273, 68)
+$txtUser.Size      = New-Object System.Drawing.Size(155, 22)
+$txtUser.Font      = $fontNormal
+$pnlOptions.Controls.Add($txtUser)
+
+$pnlOptions.Controls.Add((New-Label "Passwort:" 445 70 65 20))
+$txtPass = New-Object System.Windows.Forms.TextBox
+$txtPass.Location     = New-Object System.Drawing.Point(513, 68)
+$txtPass.Size         = New-Object System.Drawing.Size(155, 22)
+$txtPass.Font         = $fontNormal
+$txtPass.PasswordChar = '*'
+$pnlOptions.Controls.Add($txtPass)
+
+$lblCredHint = New-Label "ℹ  Leer lassen = aktuelle Windows-Anmeldung" 685 71 250 18 $false $true
+$lblCredHint.Font = $fontSmall
+$pnlOptions.Controls.Add($lblCredHint)
+
+function Get-FormCredential {
+    $user = $txtUser.Text.Trim()
+    $pass = $txtPass.Text.Trim()
+    if ([string]::IsNullOrWhiteSpace($user) -or [string]::IsNullOrWhiteSpace($pass)) { return $null }
+    $domain = $txtDomain.Text.Trim()
+    $loginName = if ($domain -ne "") { "$domain\$user" } else { $user }
+    $secPass = ConvertTo-SecureString $pass -AsPlainText -Force
+    return New-Object System.Management.Automation.PSCredential($loginName, $secPass)
+}
+
 # ── Sektion: Event-Auswahl ────────────────────────────────────
-$pnlEvents = New-SectionPanel 15 175 885 370 "📋  Events auswählen  (Mehrfachauswahl per Checkbox)"
+$pnlEvents = New-SectionPanel 15 225 885 370 "📋  Events auswählen  (Mehrfachauswahl per Checkbox)"
 $formMain.Controls.Add($pnlEvents)
 
 # Kategorie-Filter Dropdown
@@ -868,7 +912,8 @@ $btnRescan.Add_Click({
     [System.Windows.Forms.Application]::DoEvents()
 
     try {
-        $disc  = Invoke-ComputerEventScan -Computer $target -ProgressUI $progUI2 -MaxPerLog 500
+        $cred  = Get-FormCredential
+        $disc  = Invoke-ComputerEventScan -Computer $target -ProgressUI $progUI2 -MaxPerLog 500 -Credential $cred
         $added = Merge-DiscoveredEvents -Discovered $disc
 
         # Phase 2: Manifest-Übersicht
@@ -876,7 +921,7 @@ $btnRescan.Add_Click({
         if (-not $script:scanCancelled) {
             $relLogs = @($disc | Select-Object -ExpandProperty Log -Unique)
             if ($relLogs.Count -gt 0) {
-                $docs2 = Invoke-DocumentedIDsScan -Computer $target -ProgressUI $progUI2 -LogNames $relLogs
+                $docs2 = Invoke-DocumentedIDsScan -Computer $target -ProgressUI $progUI2 -LogNames $relLogs -Credential $cred
                 $addedDocs2 = Merge-DiscoveredEvents -Discovered $docs2
             }
         }
@@ -910,7 +955,7 @@ if ($hasFindings) {
 }
 
 # ── Sektion: Eigene Event-IDs ─────────────────────────────────
-$pnlCustom = New-SectionPanel 15 555 885 85 "➕  Eigene Event-ID hinzufügen"
+$pnlCustom = New-SectionPanel 15 605 885 85 "➕  Eigene Event-ID hinzufügen"
 $formMain.Controls.Add($pnlCustom)
 
 # Event-ID
@@ -1028,7 +1073,7 @@ $btnCustomAdd.Add_Click({
 
 # Beschreibungs-Label
 $lblDesc = New-Object System.Windows.Forms.Label
-$lblDesc.Location  = New-Object System.Drawing.Point(15, 648)
+$lblDesc.Location  = New-Object System.Drawing.Point(15, 698)
 $lblDesc.Size      = New-Object System.Drawing.Size(885, 22)
 $lblDesc.Font      = $fontSmall
 $lblDesc.ForeColor = $clrMuted
@@ -1045,16 +1090,16 @@ $clbEvents.Add_SelectedIndexChanged({
 })
 
 # ── Aktions-Buttons ───────────────────────────────────────────
-$btnAbfragen = New-StyledButton "🔎  Abfragen" 700 685 200 42 $true
+$btnAbfragen = New-StyledButton "🔎  Abfragen" 700 735 200 42 $true
 $btnAbfragen.Font = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
 $formMain.Controls.Add($btnAbfragen)
 
-$btnBeenden = New-StyledButton "Beenden" 15 685 100 42 $false
+$btnBeenden = New-StyledButton "Beenden" 15 735 100 42 $false
 $formMain.Controls.Add($btnBeenden)
 $btnBeenden.Add_Click({ $formMain.Close() })
 
 $lblStatus = New-Object System.Windows.Forms.Label
-$lblStatus.Location  = New-Object System.Drawing.Point(130, 690)
+$lblStatus.Location  = New-Object System.Drawing.Point(130, 740)
 $lblStatus.Size      = New-Object System.Drawing.Size(555, 32)
 $lblStatus.Font      = $fontSmall
 $lblStatus.ForeColor = $clrMuted
@@ -1102,6 +1147,7 @@ $btnAbfragen.Add_Click({
     $maxCount   = [int]$cbMax.SelectedItem
     $computer   = $txtComputer.Text.Trim()
     if ([string]::IsNullOrWhiteSpace($computer)) { $computer = $env:COMPUTERNAME }
+    $cred       = Get-FormCredential
 
     $lblStatus.ForeColor = $clrMuted
     $lblStatus.Text      = "⏳ Abfrage läuft..."
@@ -1137,10 +1183,9 @@ $btnAbfragen.Add_Click({
             if ($startTime) { $filter.StartTime = $startTime }
 
             try {
-                $winEvents = Get-WinEvent -ComputerName $computer `
-                                          -FilterHashtable $filter `
-                                          -MaxEvents $maxCount `
-                                          -ErrorAction Stop
+                $queryParams = @{ ComputerName = $computer; FilterHashtable = $filter; MaxEvents = $maxCount; ErrorAction = 'Stop' }
+                if ($cred) { $queryParams.Credential = $cred }
+                $winEvents = Get-WinEvent @queryParams
 
                 foreach ($r in $winEvents) {
                     $hitCountThisLog++
