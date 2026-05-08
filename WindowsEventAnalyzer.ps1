@@ -5,6 +5,7 @@
 # ============================================================
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
+Add-Type -AssemblyName System.Windows.Forms.DataVisualization -ErrorAction SilentlyContinue
 
 # ── Profil-Verzeichnis ────────────────────────────────────────
 $script:profileDir = Join-Path $env:APPDATA "WindowsEventAnalyzer\profiles"
@@ -705,7 +706,7 @@ $btnRescan = New-StyledButton "🔄 Scan" 745 28 130 26 $false
 $pnlOptions.Controls.Add($btnRescan)
 
 # Hinweis
-$lblHint = New-Label "ℹ  Leer lassen = lokaler Computer  ·  'Scan' aktualisiert die Erkannt-Liste" 540 54 340 18 $false $true
+$lblHint = New-Label "ℹ  Mehrere Computer: komma-getrennt  ·  'Scan' aktualisiert die Erkannt-Liste" 540 54 340 18 $false $true
 $lblHint.Font = $fontSmall
 $pnlOptions.Controls.Add($lblHint)
 
@@ -1230,6 +1231,225 @@ $btnBeenden = New-StyledButton "Beenden" 15 785 100 42 $false
 $formMain.Controls.Add($btnBeenden)
 $btnBeenden.Add_Click({ $formMain.Close() })
 
+$btnXPath = New-StyledButton "🧪 XPath-Abfrage" 560 785 130 42 $false
+$formMain.Controls.Add($btnXPath)
+
+$btnXPath.Add_Click({
+    # ── XPath-Dialog ──────────────────────────────────────────────
+    $fxp = New-Object System.Windows.Forms.Form
+    $fxp.Text            = "🧪  XPath-Direktabfrage"
+    $fxp.Size            = New-Object System.Drawing.Size(710, 370)
+    $fxp.StartPosition   = "CenterScreen"
+    $fxp.FormBorderStyle = "FixedDialog"
+    $fxp.MaximizeBox     = $false
+    $fxp.BackColor       = $clrBg
+    $fxp.Font            = $fontNormal
+
+    $pnlXH = New-Object System.Windows.Forms.Panel
+    $pnlXH.Dock = "Top"; $pnlXH.Height = 48; $pnlXH.BackColor = $clrAccent
+    $lblXH = New-Object System.Windows.Forms.Label
+    $lblXH.Text = "  🧪  XPath-Direktabfrage"; $lblXH.Dock = "Fill"
+    $lblXH.Font = $fontTitle; $lblXH.ForeColor = [System.Drawing.Color]::White; $lblXH.TextAlign = "MiddleLeft"
+    $pnlXH.Controls.Add($lblXH); $fxp.Controls.Add($pnlXH)
+
+    # Log-Name
+    $fxp.Controls.Add((New-Label "Log-Name:" 15 66 72 20 $true))
+    $cbXLog = New-Object System.Windows.Forms.ComboBox
+    $cbXLog.Location = New-Object System.Drawing.Point(92, 64)
+    $cbXLog.Size = New-Object System.Drawing.Size(345, 22); $cbXLog.Font = $fontNormal
+    $cbXLog.DropDownStyle = "DropDown"
+    @("System","Security","Application",
+      "Microsoft-Windows-PowerShell/Operational",
+      "Microsoft-Windows-Windows Defender/Operational",
+      "Microsoft-Windows-TaskScheduler/Operational",
+      "Microsoft-Windows-TerminalServices-LocalSessionManager/Operational",
+      "Microsoft-Windows-TerminalServices-RemoteConnectionManager/Operational"
+    ) | ForEach-Object { $cbXLog.Items.Add($_) | Out-Null }
+    $cbXLog.Text = "System"; $fxp.Controls.Add($cbXLog)
+
+    # Computer (aus Hauptformular vorbelegen)
+    $fxp.Controls.Add((New-Label "Computer:" 455 66 68 20 $true))
+    $txtXComp = New-Object System.Windows.Forms.TextBox
+    $txtXComp.Location = New-Object System.Drawing.Point(528, 64); $txtXComp.Size = New-Object System.Drawing.Size(160, 22)
+    $txtXComp.Text = $txtComputer.Text.Trim(); $fxp.Controls.Add($txtXComp)
+
+    # Max Events
+    $fxp.Controls.Add((New-Label "Max. Einträge:" 15 98 95 20))
+    $cbXMax = New-Object System.Windows.Forms.ComboBox
+    $cbXMax.Location = New-Object System.Drawing.Point(115, 96); $cbXMax.Size = New-Object System.Drawing.Size(80, 22)
+    $cbXMax.DropDownStyle = "DropDownList"
+    @(25,50,100,250,500) | ForEach-Object { $cbXMax.Items.Add($_) | Out-Null }
+    $cbXMax.SelectedIndex = 2; $fxp.Controls.Add($cbXMax)
+
+    # XPath-Filter
+    $fxp.Controls.Add((New-Label "XPath-Filter:" 15 130 85 20 $true))
+    $txtXPath2 = New-Object System.Windows.Forms.TextBox
+    $txtXPath2.Location  = New-Object System.Drawing.Point(15, 152)
+    $txtXPath2.Size      = New-Object System.Drawing.Size(668, 100)
+    $txtXPath2.Multiline = $true; $txtXPath2.Font = $fontMono; $txtXPath2.ScrollBars = "Vertical"
+    $txtXPath2.Text = "*[System[(Level=1 or Level=2) and TimeCreated[timediff(@SystemTime) <= 86400000]]]"
+    $fxp.Controls.Add($txtXPath2)
+
+    $lblXEx = New-Label "z.B.: *[System[EventID=4625 and TimeCreated[timediff(@SystemTime) <= 3600000]]]" 15 258 668 18 $false $true
+    $lblXEx.Font = $fontSmall; $fxp.Controls.Add($lblXEx)
+
+    $btnXRun    = New-StyledButton "🔎 Abfragen" 455 285 115 32 $true
+    $btnXClose  = New-StyledButton "Abbrechen"   578 285 100 32 $false
+    $lblXStat   = New-Label "" 15 292 432 22 $false $true
+    $fxp.Controls.Add($btnXRun); $fxp.Controls.Add($btnXClose); $fxp.Controls.Add($lblXStat)
+    $btnXClose.Add_Click({ $fxp.Close() })
+
+    $btnXRun.Add_Click({
+        $xLog   = $cbXLog.Text.Trim()
+        $xXPath = $txtXPath2.Text.Trim()
+        $xComp  = $txtXComp.Text.Trim()
+        if ([string]::IsNullOrWhiteSpace($xComp)) { $xComp = $env:COMPUTERNAME }
+        $xMax   = [int]$cbXMax.SelectedItem
+
+        if ([string]::IsNullOrWhiteSpace($xLog) -or [string]::IsNullOrWhiteSpace($xXPath)) {
+            $lblXStat.ForeColor = $clrWarn; $lblXStat.Text = "⚠  Log-Name und XPath-Filter sind erforderlich."; return
+        }
+        $lblXStat.ForeColor = $clrMuted; $lblXStat.Text = "⏳ Abfrage läuft..."; $fxp.Refresh()
+
+        try {
+            $xCred = Get-FormCredential
+            $xqp = @{ Path = $xLog; XPath = $xXPath; MaxEvents = $xMax; ComputerName = $xComp; ErrorAction = 'Stop' }
+            if ($xCred) { $xqp.Credential = $xCred }
+            $xRaw = Get-WinEvent @xqp
+
+            $xSorted = @($xRaw | ForEach-Object {
+                $r = $_
+                $msg   = if ($r.Message) { $r.Message } else { "(keine Nachricht)" }
+                $short = ($msg -replace "`r`n|`n", " ")
+                if ($short.Length -gt 300) { $short = $short.Substring(0,300) + "..." }
+                $typ = switch ($r.LevelDisplayName) {
+                    "Fehler" { "Error" } "Error" { "Error" } "Kritisch" { "Critical" } "Critical" { "Critical" }
+                    "Warnung" { "Warning" } "Warning" { "Warning" }
+                    "Information" { "Information" } "Informationen" { "Information" }
+                    default { "$($r.LevelDisplayName)" }
+                }
+                [PSCustomObject]@{
+                    Computer  = $xComp
+                    Zeit      = $r.TimeCreated; Typ = $typ
+                    Protokoll = Get-LogShortLabel $xLog; LogVoll = $xLog
+                    EventID   = $r.Id; Quelle = $r.ProviderName
+                    Kategorie = "XPath"; Beschr = $xXPath.Substring(0,[Math]::Min(60,$xXPath.Length))
+                    Nachricht = $short
+                }
+            } | Sort-Object Zeit -Descending)
+
+            if ($xSorted.Count -eq 0) {
+                $lblXStat.ForeColor = $clrWarn; $lblXStat.Text = "⚠  Keine Ereignisse gefunden."; return
+            }
+            $lblXStat.ForeColor = $clrSuccess
+            $lblXStat.Text = "✔  $($xSorted.Count) Ereignisse – Ausgabe wird geöffnet..."
+
+            # ── XPath Ausgabe-Formular ─────────────────────────────────
+            $fxOut = New-Object System.Windows.Forms.Form
+            $fxOut.Text          = "XPath-Ergebnisse  –  $($xSorted.Count) Einträge  |  $xLog  |  $xComp"
+            $fxOut.Size          = New-Object System.Drawing.Size(1150, 720)
+            $fxOut.StartPosition = "CenterScreen"; $fxOut.BackColor = $clrBg; $fxOut.Font = $fontNormal
+
+            $pnlXT = New-Object System.Windows.Forms.Panel
+            $pnlXT.Dock = "Top"; $pnlXT.Height = 56; $pnlXT.BackColor = $clrAccent
+            $lblXT = New-Object System.Windows.Forms.Label
+            $lblXT.Text = "  🧪  XPath-Ergebnisse  ·  $($xSorted.Count) Einträge"
+            $lblXT.Dock = "Fill"; $lblXT.Font = $fontTitle; $lblXT.ForeColor = [System.Drawing.Color]::White
+            $lblXT.TextAlign = "MiddleLeft"; $pnlXT.Controls.Add($lblXT); $fxOut.Controls.Add($pnlXT)
+
+            $pnlXF2 = New-Object System.Windows.Forms.Panel
+            $pnlXF2.Location = New-Object System.Drawing.Point(10,64); $pnlXF2.Size = New-Object System.Drawing.Size(1115,44)
+            $pnlXF2.BackColor = $clrPanel
+            $pnlXF2.Add_Paint({ param($s,$e); $e.Graphics.DrawRectangle((New-Object System.Drawing.Pen($clrBorder,1)),0,0,$s.Width-1,$s.Height-1) })
+            $lblXF2 = New-Label "🔎 Filter:" 8 12 60 20 $true; $pnlXF2.Controls.Add($lblXF2)
+            $txtXF2 = New-Object System.Windows.Forms.TextBox
+            $txtXF2.Location = New-Object System.Drawing.Point(70,10); $txtXF2.Size = New-Object System.Drawing.Size(280,22)
+            $txtXF2.Font = $fontNormal; $pnlXF2.Controls.Add($txtXF2)
+            $lblXC2 = New-Label "" 700 12 280 20 $false $true; $pnlXF2.Controls.Add($lblXC2)
+            $btnXE2 = New-StyledButton "💾 CSV" 990 8 110 28 $false; $pnlXF2.Controls.Add($btnXE2)
+            $fxOut.Controls.Add($pnlXF2)
+
+            # DGV
+            $xdgv = New-Object System.Windows.Forms.DataGridView
+            $xdgv.Location = New-Object System.Drawing.Point(10,114); $xdgv.Size = New-Object System.Drawing.Size(1115,500)
+            $xdgv.BackgroundColor = $clrPanel; $xdgv.GridColor = $clrBorder; $xdgv.BorderStyle = "None"
+            $xdgv.Font = $fontSmall; $xdgv.DefaultCellStyle.Font = $fontSmall
+            $xdgv.DefaultCellStyle.ForeColor = $clrText; $xdgv.DefaultCellStyle.BackColor = $clrPanel
+            $xdgv.DefaultCellStyle.SelectionBackColor = [System.Drawing.Color]::FromArgb(220,225,255)
+            $xdgv.DefaultCellStyle.SelectionForeColor = $clrText
+            $xdgv.ColumnHeadersDefaultCellStyle.BackColor = [System.Drawing.Color]::FromArgb(235,235,248)
+            $xdgv.ColumnHeadersDefaultCellStyle.ForeColor = $clrAccent
+            $xdgv.ColumnHeadersDefaultCellStyle.Font = $fontBold
+            $xdgv.ColumnHeadersHeight = 28; $xdgv.RowHeadersVisible = $false
+            $xdgv.AllowUserToAddRows = $false; $xdgv.AllowUserToDeleteRows = $false
+            $xdgv.ReadOnly = $true; $xdgv.SelectionMode = "FullRowSelect"
+            $xdgv.RowTemplate.Height = 22; $xdgv.EnableHeadersVisualStyles = $false
+            $xdgv.ScrollBars = "Both"; $fxOut.Controls.Add($xdgv)
+
+            foreach ($xColDef in @(
+                @{N="Computer";W=100},@{N="Zeit";W=135},@{N="Typ";W=80},
+                @{N="Protokoll";W=85},@{N="EventID";W=65},@{N="Quelle";W=160},@{N="Nachricht";Fill=$true}
+            )) {
+                $xc = New-Object System.Windows.Forms.DataGridViewTextBoxColumn
+                $xc.Name = $xColDef.N; $xc.HeaderText = $xColDef.N; $xc.SortMode = "Automatic"
+                if ($xColDef.Fill) { $xc.AutoSizeMode = "Fill" } else { $xc.Width = $xColDef.W }
+                $xdgv.Columns.Add($xc) | Out-Null
+            }
+            $xdgv.Add_CellFormatting({ param($s,$e)
+                if ($e.RowIndex -lt 0) { return }
+                $t = $s.Rows[$e.RowIndex].Cells["Typ"].Value
+                $e.CellStyle.BackColor = switch ($t) {
+                    "Critical" { [System.Drawing.Color]::FromArgb(255,225,225) }
+                    "Error"    { [System.Drawing.Color]::FromArgb(255,240,240) }
+                    "Warning"  { [System.Drawing.Color]::FromArgb(255,252,235) }
+                    default    { $clrPanel }
+                }
+            })
+
+            $script:xSortedRef = $xSorted
+            foreach ($r in $xSorted) {
+                $xdgv.Rows.Add($r.Computer, $r.Zeit.ToString("dd.MM.yyyy HH:mm:ss"), $r.Typ,
+                    $r.Protokoll, $r.EventID, $r.Quelle, $r.Nachricht) | Out-Null
+            }
+            $lblXC2.Text = "Einträge: $($xSorted.Count)"
+
+            $txtXF2.Add_TextChanged({
+                $f2 = $txtXF2.Text.Trim()
+                $xdgv.Rows.Clear()
+                $xFil = if ($f2 -eq "") { $script:xSortedRef } else {
+                    $script:xSortedRef | Where-Object { $_.EventID -like "*$f2*" -or $_.Quelle -like "*$f2*" -or $_.Nachricht -like "*$f2*" }
+                }
+                foreach ($r in $xFil) {
+                    $xdgv.Rows.Add($r.Computer, $r.Zeit.ToString("dd.MM.yyyy HH:mm:ss"), $r.Typ,
+                        $r.Protokoll, $r.EventID, $r.Quelle, $r.Nachricht) | Out-Null
+                }
+                $lblXC2.Text = "Einträge: $($xFil.Count) / $($script:xSortedRef.Count)"
+            })
+
+            $btnXE2.Add_Click({
+                $dlgX = New-Object System.Windows.Forms.SaveFileDialog
+                $dlgX.Filter   = "CSV-Datei (*.csv)|*.csv"
+                $dlgX.FileName = "XPath_$(Get-Date -Format 'yyyyMMdd_HHmm').csv"
+                if ($dlgX.ShowDialog() -eq "OK") {
+                    $script:xSortedRef | Export-Csv -Path $dlgX.FileName -NoTypeInformation -Encoding UTF8 -Delimiter ";"
+                    [System.Windows.Forms.MessageBox]::Show("Export: $($dlgX.FileName)", "OK","OK","Information") | Out-Null
+                }
+            })
+
+            $fxOut.ShowDialog() | Out-Null
+
+        } catch [System.Exception] {
+            if ($_.Exception.Message -match "No events were found|Es wurden keine Ereignisse gefunden") {
+                $lblXStat.ForeColor = $clrWarn; $lblXStat.Text = "⚠  Keine Ereignisse gefunden."
+            } else {
+                $lblXStat.ForeColor = $clrWarn; $lblXStat.Text = "⚠  $($_.Exception.Message)"
+            }
+        }
+    })
+
+    $fxp.ShowDialog() | Out-Null
+})
+
 $lblStatus = New-Object System.Windows.Forms.Label
 $lblStatus.Location  = New-Object System.Drawing.Point(130, 790)
 $lblStatus.Size      = New-Object System.Drawing.Size(555, 32)
@@ -1276,103 +1496,106 @@ $btnAbfragen.Add_Click({
         default             { $null }
     }
 
-    $maxCount   = [int]$cbMax.SelectedItem
-    $computer   = $txtComputer.Text.Trim()
-    if ([string]::IsNullOrWhiteSpace($computer)) { $computer = $env:COMPUTERNAME }
-    $cred       = Get-FormCredential
+    $maxCount      = [int]$cbMax.SelectedItem
+    $computers     = @($txtComputer.Text -split '[,;]' | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' })
+    if ($computers.Count -eq 0) { $computers = @($env:COMPUTERNAME) }
+    $cred          = Get-FormCredential
+    $computer      = $computers[0]   # Compat für LiveTimer / FormOut.Text
+    $computerLabel = if ($computers.Count -eq 1) { $computers[0] } else { "$($computers.Count) Computer" }
 
     $lblStatus.ForeColor = $clrMuted
     $lblStatus.Text      = "⏳ Abfrage läuft..."
     $formMain.Refresh()
 
-    # Events abfragen – gruppiert nach Log (eine Abfrage pro Log mit allen IDs)
+    # Events abfragen – pro Computer, gruppiert nach Log
     $allResults = [System.Collections.Generic.List[PSObject]]::new()
     $errors     = @()
     $diag       = [System.Collections.Generic.List[string]]::new()
 
-    # Pro Log-Name alle selektierten IDs sammeln, damit wir nur 1x pro Log abfragen
-    $byLog = $checkedIDs | Group-Object -Property Log
+    foreach ($computer in $computers) {
+        # Pro Log-Name alle selektierten IDs sammeln, damit wir nur 1x pro Log abfragen
+        $byLog = $checkedIDs | Group-Object -Property Log
 
-    foreach ($grp in $byLog) {
-        $logName = $grp.Name
-        $allIds  = @($grp.Group | Select-Object -ExpandProperty ID -Unique)
+        foreach ($grp in $byLog) {
+            $logName = $grp.Name
+            $allIds  = @($grp.Group | Select-Object -ExpandProperty ID -Unique)
 
-        # Lookup: ID -> Katalog-Eintrag (für Kategorie/Desc im Ergebnis)
-        $idLookup = @{}
-        foreach ($ev in $grp.Group) { $idLookup[$ev.ID] = $ev }
+            # Lookup: ID -> Katalog-Eintrag (für Kategorie/Desc im Ergebnis)
+            $idLookup = @{}
+            foreach ($ev in $grp.Group) { $idLookup[$ev.ID] = $ev }
 
-        # WICHTIG: Get-WinEvent -FilterHashtable unterstützt MAXIMAL 22 IDs pro Aufruf!
-        # Bei mehr IDs müssen wir in Batches von 22 abfragen.
-        $batchSize = 22
-        $hitCountThisLog = 0
-        $batchErrors     = @()
+            # WICHTIG: Get-WinEvent -FilterHashtable unterstützt MAXIMAL 22 IDs pro Aufruf!
+            $batchSize = 22
+            $hitCountThisLog = 0
+            $batchErrors     = @()
 
-        for ($offset = 0; $offset -lt $allIds.Count; $offset += $batchSize) {
-            $end       = [Math]::Min($offset + $batchSize - 1, $allIds.Count - 1)
-            $idsBatch  = $allIds[$offset..$end]
+            for ($offset = 0; $offset -lt $allIds.Count; $offset += $batchSize) {
+                $end       = [Math]::Min($offset + $batchSize - 1, $allIds.Count - 1)
+                $idsBatch  = $allIds[$offset..$end]
 
-            $filter = @{ LogName = $logName; ID = $idsBatch }
-            if ($startTime) { $filter.StartTime = $startTime }
+                $filter = @{ LogName = $logName; ID = $idsBatch }
+                if ($startTime) { $filter.StartTime = $startTime }
 
-            try {
-                $queryParams = @{ ComputerName = $computer; FilterHashtable = $filter; MaxEvents = $maxCount; ErrorAction = 'Stop' }
-                if ($cred) { $queryParams.Credential = $cred }
-                $winEvents = Get-WinEvent @queryParams
+                try {
+                    $queryParams = @{ ComputerName = $computer; FilterHashtable = $filter; MaxEvents = $maxCount; ErrorAction = 'Stop' }
+                    if ($cred) { $queryParams.Credential = $cred }
+                    $winEvents = Get-WinEvent @queryParams
 
-                foreach ($r in $winEvents) {
-                    $hitCountThisLog++
-                    $meta = $idLookup[[int]$r.Id]
-                    $msg  = if ($r.Message) { $r.Message } else { "(keine Nachricht)" }
-                    $short = ($msg -replace "`r`n|`n", " ")
-                    if ($short.Length -gt 300) { $short = $short.Substring(0, 300) + "..." }
+                    foreach ($r in $winEvents) {
+                        $hitCountThisLog++
+                        $meta = $idLookup[[int]$r.Id]
+                        $msg  = if ($r.Message) { $r.Message } else { "(keine Nachricht)" }
+                        $short = ($msg -replace "`r`n|`n", " ")
+                        if ($short.Length -gt 300) { $short = $short.Substring(0, 300) + "..." }
 
-                    $typ = switch ($r.LevelDisplayName) {
-                        "Fehler"          { "Error" }
-                        "Error"           { "Error" }
-                        "Kritisch"        { "Critical" }
-                        "Critical"        { "Critical" }
-                        "Warnung"         { "Warning" }
-                        "Warning"         { "Warning" }
-                        "Information"     { "Information" }
-                        "Informationen"   { "Information" }
-                        "Ausführlich"     { "Verbose" }
-                        "Verbose"         { "Verbose" }
-                        default           { "$($r.LevelDisplayName)" }
+                        $typ = switch ($r.LevelDisplayName) {
+                            "Fehler"          { "Error" }
+                            "Error"           { "Error" }
+                            "Kritisch"        { "Critical" }
+                            "Critical"        { "Critical" }
+                            "Warnung"         { "Warning" }
+                            "Warning"         { "Warning" }
+                            "Information"     { "Information" }
+                            "Informationen"   { "Information" }
+                            "Ausführlich"     { "Verbose" }
+                            "Verbose"         { "Verbose" }
+                            default           { "$($r.LevelDisplayName)" }
+                        }
+
+                        $allResults.Add([PSCustomObject]@{
+                            Computer  = $computer
+                            Zeit      = $r.TimeCreated
+                            Typ       = $typ
+                            Protokoll = Get-LogShortLabel $logName
+                            LogVoll   = $logName
+                            EventID   = $r.Id
+                            Quelle    = $r.ProviderName
+                            Kategorie = if ($meta) { $meta.Category } else { "" }
+                            Beschr    = if ($meta) { $meta.Desc }     else { "" }
+                            Nachricht = $short
+                        })
                     }
-
-                    $allResults.Add([PSCustomObject]@{
-                        Zeit      = $r.TimeCreated
-                        Typ       = $typ
-                        Protokoll = Get-LogShortLabel $logName
-                        LogVoll   = $logName
-                        EventID   = $r.Id
-                        Quelle    = $r.ProviderName
-                        Kategorie = if ($meta) { $meta.Category } else { "" }
-                        Beschr    = if ($meta) { $meta.Desc }     else { "" }
-                        Nachricht = $short
-                    })
-                }
-            } catch [System.Exception] {
-                # "Keine Ereignisse" ist kein echter Fehler
-                if ($_.Exception.Message -match "No events were found|Es wurden keine Ereignisse gefunden") {
-                    # nichts tun
-                } else {
-                    $batchErrors += "$($_.Exception.Message)"
+                } catch [System.Exception] {
+                    if ($_.Exception.Message -match "No events were found|Es wurden keine Ereignisse gefunden") {
+                        # nichts tun
+                    } else {
+                        $batchErrors += "$($_.Exception.Message)"
+                    }
                 }
             }
-        }
 
-        # Diagnose-Eintrag pro Log
-        $logShort = Get-LogShortLabel $logName
-        $diag.Add("$logShort  ·  $($allIds.Count) ID(s) abgefragt  ·  $hitCountThisLog Treffer")
+            # Diagnose-Eintrag pro Log
+            $logShort = Get-LogShortLabel $logName
+            $diag.Add("[$computer] $logShort  ·  $($allIds.Count) ID(s)  ·  $hitCountThisLog Treffer")
 
-        if ($batchErrors.Count -gt 0) {
-            $errors += "Log '$logName': " + ($batchErrors | Select-Object -Unique -First 1)
+            if ($batchErrors.Count -gt 0) {
+                $errors += "[$computer] '$logName': " + ($batchErrors | Select-Object -Unique -First 1)
+            }
         }
     }
 
     # Ergebnisse sortieren
-    $sorted = $allResults | Sort-Object Zeit -Descending
+    $sorted = $allResults | Sort-Object Computer, Zeit -Descending
 
     if ($errors.Count -gt 0 -and $sorted.Count -eq 0) {
         $lblStatus.ForeColor = $clrWarn
@@ -1420,7 +1643,7 @@ $($diag -join "`n")
     #  FORMULAR 2 – Ausgabe
     # ════════════════════════════════════════════════════════
     $formOut = New-Object System.Windows.Forms.Form
-    $formOut.Text           = "Event-Ergebnisse  –  $($sorted.Count) Einträge  |  $zeitText  |  $computer"
+    $formOut.Text           = "Event-Ergebnisse  –  $($sorted.Count) Einträge  |  $zeitText  |  $computerLabel"
     $formOut.Size           = New-Object System.Drawing.Size(1150, 720)
     $formOut.StartPosition  = "CenterScreen"
     $formOut.BackColor      = $clrBg
@@ -1442,7 +1665,7 @@ $($diag -join "`n")
     $pnlOutTitle.Controls.Add($lblOutTitle)
 
     $lblOutSub = New-Object System.Windows.Forms.Label
-    $lblOutSub.Text      = "   $($sorted.Count) Einträge  ·  $zeitText  ·  Computer: $computer"
+    $lblOutSub.Text      = "   $($sorted.Count) Einträge  ·  $zeitText  ·  Computer: $computerLabel"
     $lblOutSub.Dock      = "Bottom"
     $lblOutSub.Height    = 18
     $lblOutSub.Font      = $fontSmall
@@ -1453,7 +1676,7 @@ $($diag -join "`n")
     # ── Filter-Zeile ──────────────────────────────────────────
     $pnlFilter = New-Object System.Windows.Forms.Panel
     $pnlFilter.Location  = New-Object System.Drawing.Point(10, 64)
-    $pnlFilter.Size      = New-Object System.Drawing.Size(1115, 44)
+    $pnlFilter.Size      = New-Object System.Drawing.Size(1115, 72)
     $pnlFilter.BackColor = $clrPanel
     $pnlFilter.BorderStyle = "None"
     $formOut.Controls.Add($pnlFilter)
@@ -1501,10 +1724,10 @@ $($diag -join "`n")
     $pnlFilter.Controls.Add($cbTypFilter)
 
     # Protokoll-Filter (dynamisch aus den Ergebnissen)
-    $pnlFilter.Controls.Add((New-Label "Protokoll:" 600 12 70 20))
+    $pnlFilter.Controls.Add((New-Label "Protokoll:" 565 12 70 20))
     $cbLogFilter = New-Object System.Windows.Forms.ComboBox
-    $cbLogFilter.Location      = New-Object System.Drawing.Point(675, 10)
-    $cbLogFilter.Size          = New-Object System.Drawing.Size(110, 22)
+    $cbLogFilter.Location      = New-Object System.Drawing.Point(638, 10)
+    $cbLogFilter.Size          = New-Object System.Drawing.Size(105, 22)
     $cbLogFilter.DropDownStyle = "DropDownList"
     $cbLogFilter.Font          = $fontNormal
     $cbLogFilter.Items.Add("Alle") | Out-Null
@@ -1513,18 +1736,35 @@ $($diag -join "`n")
     $cbLogFilter.SelectedIndex = 0
     $pnlFilter.Controls.Add($cbLogFilter)
 
+    # Computer-Filter (dynamisch aus den Ergebnissen)
+    $pnlFilter.Controls.Add((New-Label "Computer:" 750 12 68 20))
+    $cbCompFilter = New-Object System.Windows.Forms.ComboBox
+    $cbCompFilter.Location      = New-Object System.Drawing.Point(820, 10)
+    $cbCompFilter.Size          = New-Object System.Drawing.Size(130, 22)
+    $cbCompFilter.DropDownStyle = "DropDownList"
+    $cbCompFilter.Font          = $fontNormal
+    $cbCompFilter.Items.Add("Alle") | Out-Null
+    $sorted | Select-Object -ExpandProperty Computer -Unique | Sort-Object |
+        ForEach-Object { $cbCompFilter.Items.Add($_) | Out-Null }
+    $cbCompFilter.SelectedIndex = 0
+    $pnlFilter.Controls.Add($cbCompFilter)
+
     # Ergebnis-Zähler
-    $lblCount = New-Label "" 800 12 200 20 $false $true
+    $lblCount = New-Label "" 960 12 145 20 $false $true
     $pnlFilter.Controls.Add($lblCount)
 
-    # Export-Button
-    $btnExport = New-StyledButton "💾 CSV-Export" 960 8 140 28 $false
+    # ── Zeile 2: Aktions-Buttons ─────────────────────────────────
+    $btnExport      = New-StyledButton "💾 CSV"       8   44 90 24 $false
+    $btnExportExcel = New-StyledButton "📊 Excel"    104  44 90 24 $false
+    $btnChart       = New-StyledButton "📈 Diagramm" 200  44 115 24 $false
     $pnlFilter.Controls.Add($btnExport)
+    $pnlFilter.Controls.Add($btnExportExcel)
+    $pnlFilter.Controls.Add($btnChart)
 
     # ── DataGridView ──────────────────────────────────────────
     $dgv = New-Object System.Windows.Forms.DataGridView
-    $dgv.Location              = New-Object System.Drawing.Point(10, 114)
-    $dgv.Size                  = New-Object System.Drawing.Size(1115, 500)
+    $dgv.Location              = New-Object System.Drawing.Point(10, 142)
+    $dgv.Size                  = New-Object System.Drawing.Size(1115, 472)
     $dgv.BackgroundColor       = $clrPanel
     $dgv.GridColor             = $clrBorder
     $dgv.BorderStyle           = "None"
@@ -1551,14 +1791,15 @@ $($diag -join "`n")
 
     # Spalten definieren
     $cols = @(
-        @{Name="Zeit";      Width=135; Fill=$false}
-        @{Name="Typ";       Width=80;  Fill=$false}
-        @{Name="Protokoll"; Width=85;  Fill=$false}
-        @{Name="EventID";   Width=65;  Fill=$false}
-        @{Name="Kategorie"; Width=90;  Fill=$false}
-        @{Name="Quelle";    Width=160; Fill=$false}
-        @{Name="Beschreibung"; Width=200; Fill=$false}
-        @{Name="Nachricht"; Width=0;   Fill=$true}
+        @{Name="Computer";     Width=100; Fill=$false}
+        @{Name="Zeit";         Width=135; Fill=$false}
+        @{Name="Typ";          Width=80;  Fill=$false}
+        @{Name="Protokoll";    Width=85;  Fill=$false}
+        @{Name="EventID";      Width=65;  Fill=$false}
+        @{Name="Kategorie";    Width=90;  Fill=$false}
+        @{Name="Quelle";       Width=150; Fill=$false}
+        @{Name="Beschreibung"; Width=185; Fill=$false}
+        @{Name="Nachricht";    Width=0;   Fill=$true}
     )
     foreach ($col in $cols) {
         $c = New-Object System.Windows.Forms.DataGridViewTextBoxColumn
@@ -1594,6 +1835,7 @@ $($diag -join "`n")
         $dgv.Rows.Clear()
         foreach ($r in $data) {
             $dgv.Rows.Add(
+                $r.Computer,
                 $r.Zeit.ToString("dd.MM.yyyy HH:mm:ss"),
                 $r.Typ,
                 $r.Protokoll,
@@ -1604,7 +1846,7 @@ $($diag -join "`n")
                 $r.Nachricht
             ) | Out-Null
         }
-        $lblCount.Text = "Angezeigte Einträge: $($data.Count) / $($sorted.Count)"
+        $lblCount.Text = "$($data.Count) / $($sorted.Count)"
     }
 
     # Filter-Funktion
@@ -1613,6 +1855,7 @@ $($diag -join "`n")
         if ($fText -eq "Suche in ID, Quelle, Nachricht...") { $fText = "" }
         $fTyp  = $cbTypFilter.SelectedItem
         $fLog  = $cbLogFilter.SelectedItem
+        $fComp = $cbCompFilter.SelectedItem
 
         $filtered = $sorted | Where-Object {
             $okText = ($fText -eq "") -or
@@ -1622,7 +1865,8 @@ $($diag -join "`n")
                       ($_.Beschr  -like "*$fText*")
             $okTyp  = ($fTyp -eq "Alle") -or ($_.Typ -eq $fTyp)
             $okLog  = ($fLog -eq "Alle") -or ($_.Protokoll -eq $fLog)
-            $okText -and $okTyp -and $okLog
+            $okComp = ($fComp -eq "Alle") -or ($_.Computer -eq $fComp)
+            $okText -and $okTyp -and $okLog -and $okComp
         }
         Update-Grid $filtered
     }
@@ -1630,6 +1874,7 @@ $($diag -join "`n")
     $txtFilter.Add_TextChanged({ Apply-Filter })
     $cbTypFilter.Add_SelectedIndexChanged({ Apply-Filter })
     $cbLogFilter.Add_SelectedIndexChanged({ Apply-Filter })
+    $cbCompFilter.Add_SelectedIndexChanged({ Apply-Filter })
 
     # Initial befüllen
     Update-Grid $sorted
@@ -1637,7 +1882,7 @@ $($diag -join "`n")
     # Detail-Anzeige bei Klick
     $lblDetail = New-Object System.Windows.Forms.Label
     $lblDetail.Location  = New-Object System.Drawing.Point(10, 620)
-    $lblDetail.Size      = New-Object System.Drawing.Size(1000, 40)
+    $lblDetail.Size      = New-Object System.Drawing.Size(1115, 40)
     $lblDetail.Font      = $fontSmall
     $lblDetail.ForeColor = $clrMuted
     $lblDetail.Text      = "Zeile anklicken für vollständige Nachricht"
@@ -1656,7 +1901,8 @@ $($diag -join "`n")
     $dgv.Add_CellDoubleClick({
         if ($dgv.SelectedRows.Count -gt 0) {
             $row   = $dgv.SelectedRows[0]
-            $detail = "Zeitstempel: $($row.Cells['Zeit'].Value)`n" +
+            $detail = "Computer:    $($row.Cells['Computer'].Value)`n" +
+                      "Zeitstempel: $($row.Cells['Zeit'].Value)`n" +
                       "Typ:         $($row.Cells['Typ'].Value)`n" +
                       "Protokoll:   $($row.Cells['Protokoll'].Value)`n" +
                       "Event-ID:    $($row.Cells['EventID'].Value)`n" +
@@ -1669,7 +1915,7 @@ $($diag -join "`n")
         }
     })
 
-    # CSV-Export
+    # ── CSV-Export ────────────────────────────────────────────────
     $btnExport.Add_Click({
         $dlg = New-Object System.Windows.Forms.SaveFileDialog
         $dlg.Filter   = "CSV-Datei (*.csv)|*.csv"
@@ -1677,10 +1923,150 @@ $($diag -join "`n")
         if ($dlg.ShowDialog() -eq "OK") {
             $sorted | Export-Csv -Path $dlg.FileName -NoTypeInformation -Encoding UTF8 -Delimiter ";"
             [System.Windows.Forms.MessageBox]::Show(
-                "Export abgeschlossen:`n$($dlg.FileName)",
-                "Export erfolgreich", "OK", "Information"
-            ) | Out-Null
+                "CSV-Export abgeschlossen:`n$($dlg.FileName)",
+                "Export erfolgreich", "OK", "Information") | Out-Null
         }
+    })
+
+    # ── Excel-Export ─────────────────────────────────────────────
+    $btnExportExcel.Add_Click({
+        try {
+            $excel = New-Object -ComObject Excel.Application -ErrorAction Stop
+        } catch {
+            [System.Windows.Forms.MessageBox]::Show(
+                "Microsoft Excel ist nicht installiert oder nicht verfügbar.`nBitte CSV-Export verwenden.",
+                "Excel nicht gefunden", "OK", "Warning") | Out-Null
+            return
+        }
+        $dlg = New-Object System.Windows.Forms.SaveFileDialog
+        $dlg.Filter   = "Excel-Datei (*.xlsx)|*.xlsx"
+        $dlg.FileName = "Events_$(Get-Date -Format 'yyyyMMdd_HHmm').xlsx"
+        if ($dlg.ShowDialog() -ne "OK") {
+            try { $excel.Quit() } catch {}
+            [System.Runtime.InteropServices.Marshal]::ReleaseComObject($excel) | Out-Null
+            return
+        }
+        try {
+            $excel.Visible      = $false
+            $excel.DisplayAlerts = $false
+            $wb = $excel.Workbooks.Add()
+            $ws = $wb.Worksheets.Item(1)
+            $ws.Name = "Events"
+
+            # Header
+            $headers = @("Computer","Zeit","Typ","Protokoll","EventID","Kategorie","Quelle","Beschreibung","Nachricht")
+            for ($col = 0; $col -lt $headers.Count; $col++) {
+                $ws.Cells.Item(1, $col+1)                    = $headers[$col]
+                $ws.Cells.Item(1, $col+1).Font.Bold          = $true
+                $ws.Cells.Item(1, $col+1).Interior.ColorIndex = 37
+            }
+
+            # Daten
+            $rowNum = 2
+            foreach ($r in $sorted) {
+                $ws.Cells.Item($rowNum, 1) = $r.Computer
+                $ws.Cells.Item($rowNum, 2) = $r.Zeit.ToString("dd.MM.yyyy HH:mm:ss")
+                $ws.Cells.Item($rowNum, 3) = $r.Typ
+                $ws.Cells.Item($rowNum, 4) = $r.Protokoll
+                $ws.Cells.Item($rowNum, 5) = $r.EventID
+                $ws.Cells.Item($rowNum, 6) = $r.Kategorie
+                $ws.Cells.Item($rowNum, 7) = $r.Quelle
+                $ws.Cells.Item($rowNum, 8) = $r.Beschr
+                $ws.Cells.Item($rowNum, 9) = $r.Nachricht
+                # Zeilenfarbe nach Typ
+                $ci = switch ($r.Typ) {
+                    "Critical" { 3 }   # rot
+                    "Error"    { 45 }  # lachs
+                    "Warning"  { 36 }  # gelb
+                    default    { 0 }   # keine
+                }
+                if ($ci -gt 0) {
+                    $ws.Range($ws.Cells.Item($rowNum,1), $ws.Cells.Item($rowNum,9)).Interior.ColorIndex = $ci
+                }
+                $rowNum++
+            }
+
+            $ws.Columns.AutoFit() | Out-Null
+            # Nachricht-Spalte auf max. 80 Zeichen
+            if ($ws.Columns.Item(9).ColumnWidth -gt 80) { $ws.Columns.Item(9).ColumnWidth = 80 }
+
+            $wb.SaveAs($dlg.FileName, 51)  # 51 = xlOpenXMLWorkbook
+            $wb.Close($false)
+            $excel.Quit()
+            [System.Runtime.InteropServices.Marshal]::ReleaseComObject($ws)    | Out-Null
+            [System.Runtime.InteropServices.Marshal]::ReleaseComObject($wb)    | Out-Null
+            [System.Runtime.InteropServices.Marshal]::ReleaseComObject($excel) | Out-Null
+
+            [System.Windows.Forms.MessageBox]::Show(
+                "Excel-Export abgeschlossen:`n$($dlg.FileName)",
+                "Export erfolgreich", "OK", "Information") | Out-Null
+        } catch {
+            try { $excel.Quit() } catch {}
+            [System.Windows.Forms.MessageBox]::Show(
+                "Excel-Export fehlgeschlagen:`n$($_.Exception.Message)",
+                "Fehler", "OK", "Error") | Out-Null
+        }
+    })
+
+    # ── Zeitreihe-Diagramm ───────────────────────────────────────
+    $btnChart.Add_Click({
+        # Zeitspanne bestimmen -> Granularität Stunde oder Tag
+        $useDay = $sorted.Count -gt 0 -and ($sorted[0].Zeit - $sorted[-1].Zeit).TotalHours -gt 48
+        $grouped = $sorted | Group-Object {
+            if ($useDay) { $_.Zeit.ToString("dd.MM.yyyy") }
+            else         { $_.Zeit.ToString("dd.MM. HH:00") }
+        }
+        $labels = @($grouped | ForEach-Object { $_.Name })
+        $values = @($grouped | ForEach-Object { $_.Count })
+
+        $fChart = New-Object System.Windows.Forms.Form
+        $fChart.Text          = "📈  Zeitreihe – Event-Häufigkeit"
+        $fChart.Size          = New-Object System.Drawing.Size(950, 520)
+        $fChart.StartPosition = "CenterScreen"
+        $fChart.BackColor     = $clrBg
+        $fChart.Font          = $fontNormal
+
+        try {
+            $chart = New-Object System.Windows.Forms.DataVisualization.Charting.Chart
+            $chart.Dock      = "Fill"
+            $chart.BackColor = $clrBg
+
+            $ca = New-Object System.Windows.Forms.DataVisualization.Charting.ChartArea
+            $ca.BackColor          = [System.Drawing.Color]::White
+            $ca.AxisX.Interval     = [Math]::Max(1, [Math]::Ceiling($labels.Count / 20))
+            $ca.AxisX.LabelStyle.Angle = -45
+            $ca.AxisX.LabelStyle.Font  = $fontSmall
+            $ca.AxisY.Title        = "Anzahl Events"
+            $ca.AxisY.TitleFont    = $fontSmall
+            $ca.AxisY.LabelStyle.Font  = $fontSmall
+            $chart.ChartAreas.Add($ca)
+
+            $title = New-Object System.Windows.Forms.DataVisualization.Charting.Title
+            $title.Text = "Event-Häufigkeit  ·  $($sorted.Count) Events  ·  $computerLabel"
+            $title.Font = $fontBold
+            $chart.Titles.Add($title)
+
+            $series = New-Object System.Windows.Forms.DataVisualization.Charting.Series
+            $series.ChartType   = [System.Windows.Forms.DataVisualization.Charting.SeriesChartType]::Column
+            $series.Color       = $clrAccent
+            $series.BorderColor = [System.Drawing.Color]::White
+            $series.BorderWidth = 1
+            for ($i = 0; $i -lt $labels.Count; $i++) {
+                $series.Points.AddXY($labels[$i], $values[$i]) | Out-Null
+            }
+            $chart.Series.Add($series)
+
+            $legend = New-Object System.Windows.Forms.DataVisualization.Charting.Legend
+            $legend.Enabled = $false
+            $chart.Legends.Add($legend)
+
+            $fChart.Controls.Add($chart)
+        } catch {
+            $errLbl = New-Label "⚠  Diagramm-Assembly nicht verfügbar: $($_.Exception.Message)" 20 20 860 40
+            $errLbl.ForeColor = $clrWarn
+            $fChart.Controls.Add($errLbl)
+        }
+        $fChart.ShowDialog() | Out-Null
     })
 
     # Fehler-Hinweis
