@@ -6,6 +6,12 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
+# ── Profil-Verzeichnis ────────────────────────────────────────
+$script:profileDir = Join-Path $env:APPDATA "WindowsEventAnalyzer\profiles"
+if (-not (Test-Path $script:profileDir)) {
+    New-Item -ItemType Directory -Path $script:profileDir -Force | Out-Null
+}
+
 # ── Farbschema ───────────────────────────────────────────────
 $clrBg        = [System.Drawing.Color]::FromArgb(245, 245, 250)
 $clrPanel     = [System.Drawing.Color]::FromArgb(255, 255, 255)
@@ -626,7 +632,7 @@ try {
 # ════════════════════════════════════════════════════════════
 $formMain = New-Object System.Windows.Forms.Form
 $formMain.Text            = "Windows Event Viewer – Abfrage-Tool"
-$formMain.Size            = New-Object System.Drawing.Size(920, 830)
+$formMain.Size            = New-Object System.Drawing.Size(920, 880)
 $formMain.StartPosition   = "CenterScreen"
 $formMain.BackColor       = $clrBg
 $formMain.FormBorderStyle = "FixedSingle"
@@ -658,7 +664,7 @@ $lblSubtitle.BackColor = $clrAccent
 $pnlTitle.Controls.Add($lblSubtitle)
 
 # ── Sektion: Filter-Optionen ──────────────────────────────────
-$pnlOptions = New-SectionPanel 15 75 885 140 "⚙  Abfrage-Optionen"
+$pnlOptions = New-SectionPanel 15 75 885 190 "⚙  Abfrage-Optionen"
 $formMain.Controls.Add($pnlOptions)
 
 # Zeitraum
@@ -730,6 +736,46 @@ $lblCredHint = New-Label "ℹ  Leer lassen = aktuelle Windows-Anmeldung" 685 71 
 $lblCredHint.Font = $fontSmall
 $pnlOptions.Controls.Add($lblCredHint)
 
+# ── Zeile 3: Auswahl-Profile ──────────────────────────────────
+$pnlOptions.Controls.Add((New-Label "📋 Profil:" 10 112 65 20 $true))
+$cbProfile = New-Object System.Windows.Forms.ComboBox
+$cbProfile.Location      = New-Object System.Drawing.Point(78, 110)
+$cbProfile.Size          = New-Object System.Drawing.Size(185, 22)
+$cbProfile.Font          = $fontNormal
+$cbProfile.DropDownStyle = "DropDown"
+$pnlOptions.Controls.Add($cbProfile)
+
+$btnLoadProfile = New-StyledButton "📂 Laden"  270 108 95 26 $false
+$btnSaveProfile = New-StyledButton "💾 Speichern" 372 108 115 26 $false
+$pnlOptions.Controls.Add($btnLoadProfile)
+$pnlOptions.Controls.Add($btnSaveProfile)
+
+$btnLoadProfile.Add_Click({ Load-Profile $cbProfile.Text })
+$btnSaveProfile.Add_Click({ Save-Profile $cbProfile.Text })
+
+# ── Zeile 3: Live-Modus ───────────────────────────────────────
+$pnlOptions.Controls.Add((New-Label "⟳ Live-Modus:" 505 112 90 20 $true))
+$chkLive = New-Object System.Windows.Forms.CheckBox
+$chkLive.Location = New-Object System.Drawing.Point(600, 111)
+$chkLive.Size     = New-Object System.Drawing.Size(18, 18)
+$pnlOptions.Controls.Add($chkLive)
+
+$cbLiveInterval = New-Object System.Windows.Forms.ComboBox
+$cbLiveInterval.Location      = New-Object System.Drawing.Point(623, 110)
+$cbLiveInterval.Size          = New-Object System.Drawing.Size(90, 22)
+$cbLiveInterval.DropDownStyle = "DropDownList"
+$cbLiveInterval.Font          = $fontNormal
+@("30 Sek","1 Minute","5 Minuten","10 Minuten") | ForEach-Object { $cbLiveInterval.Items.Add($_) | Out-Null }
+$cbLiveInterval.SelectedIndex = 1
+$pnlOptions.Controls.Add($cbLiveInterval)
+
+$lblLiveHint = New-Label "ℹ  Aktualisiert Ergebnisse automatisch" 720 113 220 18 $false $true
+$lblLiveHint.Font = $fontSmall
+$pnlOptions.Controls.Add($lblLiveHint)
+
+# Profilliste initialisieren
+Refresh-ProfileList
+
 function Get-FormCredential {
     $user = $txtUser.Text.Trim()
     $pass = $txtPass.Text.Trim()
@@ -740,8 +786,94 @@ function Get-FormCredential {
     return New-Object System.Management.Automation.PSCredential($loginName, $secPass)
 }
 
+# ── Profil-Funktionen ─────────────────────────────────────────
+function Save-Profile {
+    param([string]$Name)
+    if ([string]::IsNullOrWhiteSpace($Name)) {
+        [System.Windows.Forms.MessageBox]::Show("Bitte einen Profilnamen eingeben.",
+            "Kein Name", "OK", "Warning") | Out-Null
+        return
+    }
+    $events = [System.Collections.Generic.List[hashtable]]::new()
+    for ($i = 0; $i -lt $clbEvents.Items.Count; $i++) {
+        if ($clbEvents.GetItemChecked($i) -and $i -lt $script:visibleEvents.Count) {
+            $ev = $script:visibleEvents[$i]
+            $events.Add(@{ ID = $ev.ID; Log = $ev.Log })
+        }
+    }
+    if ($events.Count -eq 0) {
+        [System.Windows.Forms.MessageBox]::Show("Keine Events ausgewählt – Profil wird nicht gespeichert.",
+            "Leer", "OK", "Warning") | Out-Null
+        return
+    }
+    $obj = [ordered]@{
+        Name     = $Name
+        Zeitraum = $cbZeit.SelectedIndex
+        MaxCount = $cbMax.SelectedIndex
+        Events   = @($events)
+    }
+    $path = Join-Path $script:profileDir "$Name.json"
+    $obj | ConvertTo-Json -Depth 5 | Set-Content $path -Encoding UTF8
+    Refresh-ProfileList
+    $cbProfile.Text = $Name
+    [System.Windows.Forms.MessageBox]::Show("Profil '$Name' gespeichert ($($events.Count) Events).",
+        "Gespeichert", "OK", "Information") | Out-Null
+}
+
+function Load-Profile {
+    param([string]$Name)
+    if ([string]::IsNullOrWhiteSpace($Name)) { return }
+    $path = Join-Path $script:profileDir "$Name.json"
+    if (-not (Test-Path $path)) {
+        [System.Windows.Forms.MessageBox]::Show("Profil '$Name' nicht gefunden.", "Fehler", "OK", "Warning") | Out-Null
+        return
+    }
+    $prof = Get-Content $path -Raw -Encoding UTF8 | ConvertFrom-Json
+
+    # Filter zurücksetzen
+    $cbZeit.SelectedIndex = [int]$prof.Zeitraum
+    $cbMax.SelectedIndex  = [int]$prof.MaxCount
+
+    # Alle Bereiche anzeigen damit alle Profil-IDs sichtbar sind
+    $cbKat.SelectedIndex = 0
+    $cbLog.SelectedIndex = 0
+
+    # Events-Liste neu befüllen
+    Update-EventList
+
+    # Profil-Events ankreuzen
+    $profSet = @{}
+    foreach ($e in $prof.Events) { $profSet["$($e.ID)|$($e.Log)"] = $true }
+
+    for ($i = 0; $i -lt $script:visibleEvents.Count; $i++) {
+        $ev  = $script:visibleEvents[$i]
+        $key = "$($ev.ID)|$($ev.Log)"
+        $clbEvents.SetItemChecked($i, $profSet.ContainsKey($key))
+    }
+
+    $hitCount = ($profSet.Keys | Where-Object { $profSet[$_] }).Count
+    $lblStatus.ForeColor = $clrSuccess
+    $lblStatus.Text = "✔ Profil '$Name' geladen – $($hitCount) Events ausgewählt."
+}
+
+function Refresh-ProfileList {
+    $current = $cbProfile.Text
+    $cbProfile.Items.Clear()
+    Get-ChildItem $script:profileDir -Filter "*.json" -ErrorAction SilentlyContinue |
+        Select-Object -ExpandProperty BaseName |
+        Sort-Object |
+        ForEach-Object { $cbProfile.Items.Add($_) | Out-Null }
+    if ($cbProfile.Items.Contains($current)) { $cbProfile.Text = $current }
+}
+
+# ── Live-Timer (Skript-Scope für FormOut-Zugriff) ─────────────
+$script:liveTimer    = New-Object System.Windows.Forms.Timer
+$script:liveTimer.Interval = 60000   # Default 1 Minute
+$script:liveDgv      = $null         # Referenz auf aktives DataGridView
+$script:liveDataRef  = $null         # Referenz auf $sorted der aktuellen Abfrage
+
 # ── Sektion: Event-Auswahl ────────────────────────────────────
-$pnlEvents = New-SectionPanel 15 225 885 370 "📋  Events auswählen  (Mehrfachauswahl per Checkbox)"
+$pnlEvents = New-SectionPanel 15 275 885 370 "📋  Events auswählen  (Mehrfachauswahl per Checkbox)"
 $formMain.Controls.Add($pnlEvents)
 
 # Kategorie-Filter Dropdown
@@ -955,7 +1087,7 @@ if ($hasFindings) {
 }
 
 # ── Sektion: Eigene Event-IDs ─────────────────────────────────
-$pnlCustom = New-SectionPanel 15 605 885 85 "➕  Eigene Event-ID hinzufügen"
+$pnlCustom = New-SectionPanel 15 655 885 85 "➕  Eigene Event-ID hinzufügen"
 $formMain.Controls.Add($pnlCustom)
 
 # Event-ID
@@ -1073,7 +1205,7 @@ $btnCustomAdd.Add_Click({
 
 # Beschreibungs-Label
 $lblDesc = New-Object System.Windows.Forms.Label
-$lblDesc.Location  = New-Object System.Drawing.Point(15, 698)
+$lblDesc.Location  = New-Object System.Drawing.Point(15, 748)
 $lblDesc.Size      = New-Object System.Drawing.Size(885, 22)
 $lblDesc.Font      = $fontSmall
 $lblDesc.ForeColor = $clrMuted
@@ -1090,16 +1222,16 @@ $clbEvents.Add_SelectedIndexChanged({
 })
 
 # ── Aktions-Buttons ───────────────────────────────────────────
-$btnAbfragen = New-StyledButton "🔎  Abfragen" 700 735 200 42 $true
+$btnAbfragen = New-StyledButton "🔎  Abfragen" 700 785 200 42 $true
 $btnAbfragen.Font = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
 $formMain.Controls.Add($btnAbfragen)
 
-$btnBeenden = New-StyledButton "Beenden" 15 735 100 42 $false
+$btnBeenden = New-StyledButton "Beenden" 15 785 100 42 $false
 $formMain.Controls.Add($btnBeenden)
 $btnBeenden.Add_Click({ $formMain.Close() })
 
 $lblStatus = New-Object System.Windows.Forms.Label
-$lblStatus.Location  = New-Object System.Drawing.Point(130, 740)
+$lblStatus.Location  = New-Object System.Drawing.Point(130, 790)
 $lblStatus.Size      = New-Object System.Drawing.Size(555, 32)
 $lblStatus.Font      = $fontSmall
 $lblStatus.ForeColor = $clrMuted
@@ -1558,7 +1690,85 @@ $($diag -join "`n")
         $formOut.Controls.Add($lblErr)
     }
 
+    # ── Live-Modus ────────────────────────────────────────────
+    $lblLiveStatus = New-Object System.Windows.Forms.Label
+    $lblLiveStatus.Location  = New-Object System.Drawing.Point(10, 668)
+    $lblLiveStatus.Size      = New-Object System.Drawing.Size(500, 18)
+    $lblLiveStatus.Font      = $fontSmall
+    $lblLiveStatus.ForeColor = $clrMuted
+    $formOut.Controls.Add($lblLiveStatus)
+
+    if ($chkLive.Checked) {
+        # Interval bestimmen
+        $script:liveTimer.Interval = switch ($cbLiveInterval.SelectedItem) {
+            "30 Sek"      { 30000  }
+            "1 Minute"    { 60000  }
+            "5 Minuten"   { 300000 }
+            "10 Minuten"  { 600000 }
+            default       { 60000  }
+        }
+
+        # Abfrage-Parameter für Timer einfrieren (Closure über $checkedIDs, $startTime, $maxCount, $computer, $cred)
+        $script:liveTimer.Add_Tick({
+            $freshResults = [System.Collections.Generic.List[PSObject]]::new()
+            $byLogLive = $checkedIDs | Group-Object -Property Log
+            foreach ($grp in $byLogLive) {
+                $logName = $grp.Name
+                $allIds  = @($grp.Group | Select-Object -ExpandProperty ID -Unique)
+                $idLookup = @{}
+                foreach ($ev in $grp.Group) { $idLookup[$ev.ID] = $ev }
+                for ($offset = 0; $offset -lt $allIds.Count; $offset += 22) {
+                    $end      = [Math]::Min($offset + 21, $allIds.Count - 1)
+                    $idsBatch = $allIds[$offset..$end]
+                    $filter   = @{ LogName = $logName; ID = $idsBatch }
+                    if ($startTime) { $filter.StartTime = $startTime }
+                    try {
+                        $qp = @{ ComputerName = $computer; FilterHashtable = $filter; MaxEvents = $maxCount; ErrorAction = 'Stop' }
+                        if ($cred) { $qp.Credential = $cred }
+                        $winEvents = Get-WinEvent @qp
+                        foreach ($r in $winEvents) {
+                            $meta  = $idLookup[[int]$r.Id]
+                            $msg   = if ($r.Message) { $r.Message } else { "(keine Nachricht)" }
+                            $short = ($msg -replace "`r`n|`n", " ")
+                            if ($short.Length -gt 300) { $short = $short.Substring(0, 300) + "..." }
+                            $typ = switch ($r.LevelDisplayName) {
+                                "Fehler"        { "Error" }     "Error"         { "Error" }
+                                "Kritisch"      { "Critical" }  "Critical"      { "Critical" }
+                                "Warnung"       { "Warning" }   "Warning"       { "Warning" }
+                                "Information"   { "Information" } "Informationen" { "Information" }
+                                default         { "$($r.LevelDisplayName)" }
+                            }
+                            $freshResults.Add([PSCustomObject]@{
+                                Zeit = $r.TimeCreated; Typ = $typ
+                                Protokoll = Get-LogShortLabel $logName; LogVoll = $logName
+                                EventID = $r.Id; Quelle = $r.ProviderName
+                                Kategorie = if ($meta) { $meta.Category } else { "" }
+                                Beschr    = if ($meta) { $meta.Desc }     else { "" }
+                                Nachricht = $short
+                            })
+                        }
+                    } catch {}
+                }
+            }
+            $script:liveDataRef = $freshResults | Sort-Object Zeit -Descending
+            Update-Grid $script:liveDataRef
+            $lblLiveStatus.ForeColor = $clrSuccess
+            $lblLiveStatus.Text = "⟳ Live: letzte Aktualisierung $(Get-Date -Format 'HH:mm:ss')  –  $($script:liveDataRef.Count) Einträge"
+        })
+
+        $script:liveTimer.Start()
+        $lblLiveStatus.ForeColor = $clrInfo
+        $lblLiveStatus.Text = "⟳ Live-Modus aktiv – Intervall: $($cbLiveInterval.SelectedItem)"
+
+        $formOut.Add_FormClosed({
+            $script:liveTimer.Stop()
+            $script:liveTimer.Remove_Tick($script:liveTimer.Tag)
+            $lblLiveStatus.Text = ""
+        })
+    }
+
     $formOut.ShowDialog() | Out-Null
+    $script:liveTimer.Stop()
 })
 
 # ── Starten ───────────────────────────────────────────────────
