@@ -23,3 +23,4 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 - [2026-05-09 11:02:40] feat: Excel-Export wird beim Start erkannt - Button in beiden Fenstern ausgeblendet wenn Excel fehlt
 - [2026-05-09 11:02:40] docs: README - Excel-Erkennung und Export-Abschnitt aktualisiert
 - [2026-05-09 11:49:01] Bearbeitet: WindowsEventAnalyzer.ps1
+- [2026-05-09 11:49:20] Bearbeitet: WindowsEventAnalyzer.ps1
