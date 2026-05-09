@@ -1562,20 +1562,29 @@ $btnXPath.Add_Click({
             $lblXT.TextAlign = "MiddleLeft"; $pnlXT.Controls.Add($lblXT); $fxOut.Controls.Add($pnlXT)
 
             $pnlXF2 = New-Object System.Windows.Forms.Panel
-            $pnlXF2.Location = New-Object System.Drawing.Point(10,64); $pnlXF2.Size = New-Object System.Drawing.Size(1115,44)
+            $pnlXF2.Location = New-Object System.Drawing.Point(10,64); $pnlXF2.Size = New-Object System.Drawing.Size(1115,72)
             $pnlXF2.BackColor = $clrPanel
             $pnlXF2.Add_Paint({ param($s,$e); $e.Graphics.DrawRectangle((New-Object System.Drawing.Pen($clrBorder,1)),0,0,$s.Width-1,$s.Height-1) })
-            $lblXF2 = New-Label "Filter:" 8 12 60 20 $true; $pnlXF2.Controls.Add($lblXF2)
+
+            # ── Zeile 1: Suche + Zähler ───────────────────────────────
+            $lblXF2 = New-Label "Suche:" 8 12 50 20 $true; $pnlXF2.Controls.Add($lblXF2)
             $txtXF2 = New-Object System.Windows.Forms.TextBox
-            $txtXF2.Location = New-Object System.Drawing.Point(70,10); $txtXF2.Size = New-Object System.Drawing.Size(280,22)
+            $txtXF2.Location = New-Object System.Drawing.Point(62,10); $txtXF2.Size = New-Object System.Drawing.Size(820,22)
             $txtXF2.Font = $fontNormal; $pnlXF2.Controls.Add($txtXF2)
-            $lblXC2 = New-Label "" 700 12 280 20 $false $true; $pnlXF2.Controls.Add($lblXC2)
-            $btnXE2 = New-StyledButton "CSV-Export" 990 8 110 28 $false; $pnlXF2.Controls.Add($btnXE2)
+            $lblXC2 = New-Label "" 890 12 215 20 $false $true; $pnlXF2.Controls.Add($lblXC2)
+
+            # ── Zeile 2: Export + Diagramm-Buttons ────────────────────
+            $btnXE2      = New-StyledButton "CSV-Export"   8  44 110 24 $false
+            $btnXExcel   = New-StyledButton "Excel-Export" 126 44 115 24 $false
+            $btnXChart   = New-StyledButton "Diagramm"     249 44 100 24 $false
+            $pnlXF2.Controls.Add($btnXE2)
+            $pnlXF2.Controls.Add($btnXExcel)
+            $pnlXF2.Controls.Add($btnXChart)
             $fxOut.Controls.Add($pnlXF2)
 
             # DGV
             $xdgv = New-Object System.Windows.Forms.DataGridView
-            $xdgv.Location = New-Object System.Drawing.Point(10,114); $xdgv.Size = New-Object System.Drawing.Size(1115,500)
+            $xdgv.Location = New-Object System.Drawing.Point(10,142); $xdgv.Size = New-Object System.Drawing.Size(1115,472)
             $xdgv.BackgroundColor = $clrPanel; $xdgv.GridColor = $clrBorder; $xdgv.BorderStyle = "None"
             $xdgv.Font = $fontSmall; $xdgv.DefaultCellStyle.Font = $fontSmall
             $xdgv.DefaultCellStyle.ForeColor = $clrText; $xdgv.DefaultCellStyle.BackColor = $clrPanel
@@ -1630,14 +1639,108 @@ $btnXPath.Add_Click({
                 $lblXC2.Text = "Einträge: $($xFil.Count) / $($script:xSortedRef.Count)"
             })
 
+            # ── CSV-Export ────────────────────────────────────────────
             $btnXE2.Add_Click({
                 $dlgX = New-Object System.Windows.Forms.SaveFileDialog
                 $dlgX.Filter   = "CSV-Datei (*.csv)|*.csv"
                 $dlgX.FileName = "XPath_$(Get-Date -Format 'yyyyMMdd_HHmm').csv"
                 if ($dlgX.ShowDialog() -eq "OK") {
                     $script:xSortedRef | Export-Csv -Path $dlgX.FileName -NoTypeInformation -Encoding UTF8 -Delimiter ";"
-                    [System.Windows.Forms.MessageBox]::Show("Export: $($dlgX.FileName)", "OK","OK","Information") | Out-Null
+                    [System.Windows.Forms.MessageBox]::Show("CSV-Export abgeschlossen:`n$($dlgX.FileName)", "Export erfolgreich","OK","Information") | Out-Null
                 }
+            })
+
+            # ── Excel-Export ──────────────────────────────────────────
+            $btnXExcel.Add_Click({
+                try {
+                    $xls = New-Object -ComObject Excel.Application -ErrorAction Stop
+                } catch {
+                    [System.Windows.Forms.MessageBox]::Show(
+                        "Microsoft Excel ist nicht installiert oder nicht verfügbar.`nBitte CSV-Export verwenden.",
+                        "Excel nicht gefunden","OK","Warning") | Out-Null; return
+                }
+                $dlgX = New-Object System.Windows.Forms.SaveFileDialog
+                $dlgX.Filter   = "Excel-Datei (*.xlsx)|*.xlsx"
+                $dlgX.FileName = "XPath_$(Get-Date -Format 'yyyyMMdd_HHmm').xlsx"
+                if ($dlgX.ShowDialog() -ne "OK") { try { $xls.Quit() } catch {}; return }
+                try {
+                    $xls.Visible = $false; $xls.DisplayAlerts = $false
+                    $wb  = $xls.Workbooks.Add()
+                    $ws  = $wb.Worksheets.Item(1); $ws.Name = "XPath-Events"
+                    $headers = @("Computer","Zeit","Typ","Protokoll","EventID","Quelle","Nachricht")
+                    for ($hc = 0; $hc -lt $headers.Count; $hc++) {
+                        $ws.Cells.Item(1, $hc+1) = $headers[$hc]
+                        $ws.Cells.Item(1, $hc+1).Font.Bold = $true
+                    }
+                    $row = 2
+                    foreach ($r in $script:xSortedRef) {
+                        $ws.Cells.Item($row,1) = $r.Computer
+                        $ws.Cells.Item($row,2) = $r.Zeit.ToString("dd.MM.yyyy HH:mm:ss")
+                        $ws.Cells.Item($row,3) = $r.Typ
+                        $ws.Cells.Item($row,4) = $r.Protokoll
+                        $ws.Cells.Item($row,5) = $r.EventID
+                        $ws.Cells.Item($row,6) = $r.Quelle
+                        $ws.Cells.Item($row,7) = $r.Nachricht
+                        $row++
+                    }
+                    $ws.Columns.AutoFit() | Out-Null
+                    $wb.SaveAs($dlgX.FileName, 51)
+                    $wb.Close($false); $xls.Quit()
+                    [System.Windows.Forms.MessageBox]::Show("Excel-Export abgeschlossen:`n$($dlgX.FileName)", "Export erfolgreich","OK","Information") | Out-Null
+                } catch {
+                    try { $xls.Quit() } catch {}
+                    [System.Windows.Forms.MessageBox]::Show("Excel-Export fehlgeschlagen:`n$($_.Exception.Message)", "Fehler","OK","Error") | Out-Null
+                }
+            })
+
+            # ── Zeitreihe-Diagramm ────────────────────────────────────
+            $btnXChart.Add_Click({
+                $xRef = $script:xSortedRef
+                $useDay = $xRef.Count -gt 0 -and ($xRef[0].Zeit - $xRef[-1].Zeit).TotalHours -gt 48
+                $grouped = @($xRef | Group-Object {
+                    if ($useDay) { $_.Zeit.ToString("dd.MM.yyyy") }
+                    else         { $_.Zeit.ToString("dd.MM. HH:00") }
+                })
+                [Array]::Reverse($grouped)   # aelteste links, neueste rechts
+                $xLabels = @($grouped | ForEach-Object { $_.Name })
+                $xValues = @($grouped | ForEach-Object { $_.Count })
+
+                $fxChart = New-Object System.Windows.Forms.Form
+                $fxChart.Text = "Zeitreihe - XPath Event-Häufigkeit"
+                $fxChart.Size = New-Object System.Drawing.Size(950,520)
+                $fxChart.StartPosition = "CenterScreen"; $fxChart.BackColor = $clrBg; $fxChart.Font = $fontNormal
+                try {
+                    $xChart = New-Object System.Windows.Forms.DataVisualization.Charting.Chart
+                    $xChart.Dock = "Fill"; $xChart.BackColor = $clrBg
+                    $xca = New-Object System.Windows.Forms.DataVisualization.Charting.ChartArea
+                    $xca.BackColor = [System.Drawing.Color]::White
+                    $xca.AxisX.Interval = [Math]::Max(1,[Math]::Ceiling($xLabels.Count / 20))
+                    $xca.AxisX.LabelStyle.Angle = -45
+                    $xca.AxisX.LabelStyle.Font  = $fontSmall
+                    $xca.AxisY.Title            = "Anzahl Events"
+                    $xca.AxisY.TitleFont        = $fontSmall
+                    $xca.AxisY.LabelStyle.Font  = $fontSmall
+                    $xChart.ChartAreas.Add($xca)
+                    $xtitle = New-Object System.Windows.Forms.DataVisualization.Charting.Title
+                    $xtitle.Text = "XPath Event-Häufigkeit  ·  $($xRef.Count) Events  ·  $xComp"
+                    $xtitle.Font = $fontBold; $xChart.Titles.Add($xtitle)
+                    $xseries = New-Object System.Windows.Forms.DataVisualization.Charting.Series
+                    $xseries.ChartType   = [System.Windows.Forms.DataVisualization.Charting.SeriesChartType]::Column
+                    $xseries.Color       = $clrAccent
+                    $xseries.BorderColor = [System.Drawing.Color]::White
+                    $xseries.BorderWidth = 1
+                    for ($i = 0; $i -lt $xLabels.Count; $i++) {
+                        $xseries.Points.AddXY($xLabels[$i], $xValues[$i]) | Out-Null
+                    }
+                    $xChart.Series.Add($xseries)
+                    $xleg = New-Object System.Windows.Forms.DataVisualization.Charting.Legend
+                    $xleg.Enabled = $false; $xChart.Legends.Add($xleg)
+                    $fxChart.Controls.Add($xChart)
+                } catch {
+                    $xErrLbl = New-Label "⚠  Diagramm-Assembly nicht verfügbar: $($_.Exception.Message)" 20 20 860 40
+                    $xErrLbl.ForeColor = $clrWarn; $fxChart.Controls.Add($xErrLbl)
+                }
+                $fxChart.ShowDialog() | Out-Null
             })
 
             $fxOut.ShowDialog() | Out-Null
