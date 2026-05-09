@@ -32,3 +32,4 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 - [2026-05-09 12:22:31] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-09 12:23:26] fix: Manifest-Scan - nur Security ausgeschlossen (System/Application/PowerShell wieder aktiv -> mehr Manifeste)
 - [2026-05-09 16:32:15] Bearbeitet: WindowsEventAnalyzer.ps1
+- [2026-05-09 16:32:33] Bearbeitet: WindowsEventAnalyzer.ps1
