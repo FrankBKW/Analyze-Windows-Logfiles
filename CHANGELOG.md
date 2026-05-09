@@ -16,3 +16,4 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 - [2026-05-09 10:27:22] feat: XPath-Ergebnis - Detail-Anzeige (Klick + Doppelklick) wie normale Abfrage
 - [2026-05-09 11:00:15] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-09 11:00:35] Bearbeitet: WindowsEventAnalyzer.ps1
+- [2026-05-09 11:01:00] Bearbeitet: WindowsEventAnalyzer.ps1
