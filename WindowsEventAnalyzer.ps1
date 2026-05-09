@@ -1,7 +1,54 @@
 ﻿# ============================================================
-#  Windows Event Viewer – Interaktives Abfrage-Tool
+#  Windows Event Analyzer – Interaktives Abfrage-Tool
 #  Anforderungen: Windows PowerShell 5.1 oder PowerShell 7+
 #  Als Administrator ausführen für vollständigen Log-Zugriff
+# ============================================================
+#
+# ⚠️  DISCLAIMER / RECHTLICHER HINWEIS
+# ============================================================
+#
+#  NUTZUNGSZWECK
+#  Dieses Script ist ausschließlich für den legitimen, autorisierten
+#  Einsatz durch IT-Administratoren, System-Engineers und Sicherheits-
+#  verantwortliche bestimmt, die zur Analyse der betroffenen Systeme
+#  ausdrücklich berechtigt sind.
+#
+#  ZUGRIFF AUF FREMDE SYSTEME
+#  Das Auslesen von Ereignisprotokollen ohne ausdrückliche Genehmigung
+#  des Systemeigentümers oder zuständigen IT-Verantwortlichen kann
+#  strafbar sein:
+#    - Deutschland : § 202a StGB (Ausspähen von Daten)
+#    - Österreich  : § 118a öStGB
+#    - Schweiz     : Art. 143 StGB
+#    - EU          : Richtlinie 2013/40/EU
+#    - USA         : Computer Fraud and Abuse Act (CFAA)
+#  Nur Systeme abfragen, für die eine ausdrückliche Berechtigung vorliegt.
+#
+#  DATENSCHUTZ / DSGVO
+#  Windows-Ereignisprotokolle können personenbezogene Daten enthalten
+#  (Benutzernamen, IP-Adressen, Anmeldezeiten, Dateizugriffe u.a.).
+#  Die Verarbeitung unterliegt der DSGVO sowie nationalen Datenschutz-
+#  gesetzen. Exportierte Dateien (CSV, Excel) sind entsprechend zu
+#  schützen und nach Ablauf der Aufbewahrungsfrist sicher zu löschen.
+#
+#  CREDENTIALS
+#  Eingegebene Passwörter werden als SecureString im Arbeitsspeicher
+#  verwaltet und nicht dauerhaft gespeichert. Die Verantwortung für
+#  den sicheren Umgang mit Zugangsdaten liegt beim Anwender.
+#
+#  HAFTUNGSAUSSCHLUSS
+#  Dieses Script wird OHNE JEDE GEWÄHRLEISTUNG bereitgestellt.
+#  Der Autor übernimmt keine Haftung für Schäden, die durch die
+#  Nutzung, Fehlnutzung oder den Ausfall des Scripts entstehen,
+#  einschließlich Datenverlust, Systemausfälle oder Sicherheits-
+#  vorfälle. Der Einsatz erfolgt auf eigene Verantwortung.
+#
+#  EXECUTIONPOLICY
+#  Der Start mit -ExecutionPolicy Bypass deaktiviert Skript-
+#  signaturprüfungen. Für den Produktiveinsatz empfohlen:
+#    Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+#  oder das Script mit einem Code-Signing-Zertifikat signieren.
+#
 # ============================================================
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
