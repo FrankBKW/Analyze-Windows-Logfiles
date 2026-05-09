@@ -259,6 +259,16 @@ Schränkt die Anzeige auf eine Log-Gruppe ein:
 ### Hover-Info
 Ein Klick auf einen Listeneintrag zeigt unten die vollständige Beschreibung der Event-ID an.
 
+### Fortschrittsanzeige bei Abfragen
+
+Während eine Abfrage läuft, erscheint am unteren Rand des Hauptfensters ein **Fortschrittsbalken** mit aktuellem Status:
+```
+Abfrage läuft... PC-EXAMPLE  ·  Security  (2 / 5)
+```
+- Der **Abfragen**-Button wird während der Abfrage gesperrt, um Doppelklicks zu verhindern.
+- Der Balken zeigt den Fortschritt pro Computer × Log-Gruppe.
+- Nach Abschluss verschwindet der Balken automatisch.
+
 ### Scan-Aktualisierung (🔄 Scan)
 Der **🔄 Scan**-Button scannt den Ziel-Computer erneut und ergänzt den Katalog.
 
