@@ -686,7 +686,7 @@ if ($dlgScan -eq [System.Windows.Forms.DialogResult]::Yes) {
 # ════════════════════════════════════════════════════════════
 $formMain = New-Object System.Windows.Forms.Form
 $formMain.Text            = "Windows Event Viewer – Abfrage-Tool"
-$formMain.Size            = New-Object System.Drawing.Size(920, 845)
+$formMain.Size            = New-Object System.Drawing.Size(920, 862)
 $formMain.StartPosition   = "CenterScreen"
 $formMain.BackColor       = $clrBg
 $formMain.FormBorderStyle = "FixedSingle"
@@ -1879,6 +1879,17 @@ if ($script:startupScanResult) {
 }
 $formMain.Controls.Add($lblStatus)
 
+# Fortschrittsbalken (nur während Abfrage sichtbar)
+$pbQuery = New-Object System.Windows.Forms.ProgressBar
+$pbQuery.Location  = New-Object System.Drawing.Point(15, 826)
+$pbQuery.Size      = New-Object System.Drawing.Size(885, 10)
+$pbQuery.Minimum   = 0
+$pbQuery.Maximum   = 100
+$pbQuery.Value     = 0
+$pbQuery.Style     = "Continuous"
+$pbQuery.Visible   = $false
+$formMain.Controls.Add($pbQuery)
+
 # ════════════════════════════════════════════════════════════
 #  ABFRAGE-LOGIK
 # ════════════════════════════════════════════════════════════
@@ -1923,6 +1934,16 @@ $btnAbfragen.Add_Click({
     $lblStatus.Text      = "Abfrage läuft..."
     $formMain.Refresh()
 
+    # Fortschrittsbalken initialisieren
+    $byLogAll    = @($checkedIDs | Group-Object -Property Log)
+    $totalSteps  = [Math]::Max(1, $computers.Count * $byLogAll.Count)
+    $queryStep   = 0
+    $pbQuery.Maximum = $totalSteps
+    $pbQuery.Value   = 0
+    $pbQuery.Visible = $true
+    $btnAbfragen.Enabled = $false
+    $formMain.Refresh()
+
     # Events abfragen – pro Computer, gruppiert nach Log
     $allResults = [System.Collections.Generic.List[PSObject]]::new()
     $errors     = @()
@@ -1933,6 +1954,10 @@ $btnAbfragen.Add_Click({
         $byLog = $checkedIDs | Group-Object -Property Log
 
         foreach ($grp in $byLog) {
+            $queryStep++
+            $pbQuery.Value   = [Math]::Min($queryStep, $pbQuery.Maximum)
+            $lblStatus.Text  = "Abfrage läuft... $computer  ·  $(Get-LogShortLabel $grp.Name)  ($queryStep / $totalSteps)"
+            [System.Windows.Forms.Application]::DoEvents()
             $logName = $grp.Name
             $allIds  = @($grp.Group | Select-Object -ExpandProperty ID -Unique)
 
@@ -2009,6 +2034,12 @@ $btnAbfragen.Add_Click({
             }
         }
     }
+
+    # Fortschrittsbalken ausblenden, Button freigeben
+    $pbQuery.Value   = $pbQuery.Maximum
+    [System.Windows.Forms.Application]::DoEvents()
+    $pbQuery.Visible     = $false
+    $btnAbfragen.Enabled = $true
 
     # Ergebnisse sortieren
     $sorted = $allResults | Sort-Object Computer, Zeit -Descending
