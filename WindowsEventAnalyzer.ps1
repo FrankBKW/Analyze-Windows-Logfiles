@@ -1359,7 +1359,7 @@ $btnXPath.Add_Click({
 
         try {
             $xCred = Get-FormCredential
-            $xqp = @{ Path = $xLog; XPath = $xXPath; MaxEvents = $xMax; ComputerName = $xComp; ErrorAction = 'Stop' }
+            $xqp = @{ LogName = $xLog; FilterXPath = $xXPath; MaxEvents = $xMax; ComputerName = $xComp; ErrorAction = 'Stop' }
             if ($xCred) { $xqp.Credential = $xCred }
             $xRaw = Get-WinEvent @xqp
 
