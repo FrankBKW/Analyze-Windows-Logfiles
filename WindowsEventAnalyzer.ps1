@@ -1035,10 +1035,28 @@ $pnlEvents.Controls.Add($btnNone)
 $lblCatCount = New-Label "" 740 35 130 20 $false $true
 $pnlEvents.Controls.Add($lblCatCount)
 
+# ── Volltextsuche ─────────────────────────────────────────────
+$script:searchFilter = ""
+$pnlEvents.Controls.Add((New-Label "Suche:" 10 64 48 20))
+$txtSearch = New-Object System.Windows.Forms.TextBox
+$txtSearch.Location    = New-Object System.Drawing.Point(60, 62)
+$txtSearch.Size        = New-Object System.Drawing.Size(700, 22)
+$txtSearch.Font        = $fontNormal
+$txtSearch.BackColor   = $clrPanel
+$txtSearch.ForeColor   = $clrText
+$txtSearch.BorderStyle = "FixedSingle"
+$pnlEvents.Controls.Add($txtSearch)
+$btnSearchClear = New-StyledButton "X" 766 60 30 24 $false
+$pnlEvents.Controls.Add($btnSearchClear)
+$toolTip.SetToolTip($txtSearch,
+    "Volltextsuche über Event-ID, Beschreibung, Kategorie und Log-Bereich.`n" +
+    "Die Liste wird sofort beim Tippen gefiltert.")
+$toolTip.SetToolTip($btnSearchClear, "Suchfeld leeren")
+
 # CheckedListBox für Events – monospace für saubere Ausrichtung
 $clbEvents = New-Object System.Windows.Forms.CheckedListBox
-$clbEvents.Location       = New-Object System.Drawing.Point(10, 62)
-$clbEvents.Size           = New-Object System.Drawing.Size(860, 295)
+$clbEvents.Location       = New-Object System.Drawing.Point(10, 90)
+$clbEvents.Size           = New-Object System.Drawing.Size(860, 267)
 $clbEvents.Font           = New-Object System.Drawing.Font("Consolas", 9)
 $clbEvents.BackColor      = $clrPanel
 $clbEvents.ForeColor      = $clrText
@@ -1121,7 +1139,14 @@ function Update-EventList {
             }
         }
 
-        if ($showKat -and $showLog) {
+        $searchTerm = $script:searchFilter.Trim().ToLower()
+        $matchSearch = $searchTerm -eq "" -or
+                       ($ev.ID.ToString()         -like "*$searchTerm*") -or
+                       ($ev.Desc.ToLower()         -like "*$searchTerm*") -or
+                       ($ev.Category.ToLower()     -like "*$searchTerm*") -or
+                       ($ev.Log.ToLower()          -like "*$searchTerm*")
+
+        if ($showKat -and $showLog -and $matchSearch) {
             $logShort = Get-LogShortLabel $ev.Log
             $display  = ("{0}  ID {1,-6} [{2,-10}] [{3,-12}]  {4}" -f $ev.Icon, $ev.ID, $logShort, $ev.Category, $ev.Desc)
             $clbEvents.Items.Add($display) | Out-Null
@@ -1159,6 +1184,15 @@ $toolTip.SetToolTip($clbEvents,
 # Filter-Events verdrahten
 $cbKat.Add_SelectedIndexChanged({ Update-EventList })
 $cbLog.Add_SelectedIndexChanged({ Update-EventList })
+$txtSearch.Add_TextChanged({
+    $script:searchFilter = $txtSearch.Text
+    Update-EventList
+})
+$btnSearchClear.Add_Click({
+    $txtSearch.Clear()
+    $script:searchFilter = ""
+    Update-EventList
+})
 $btnAll.Add_Click({ for ($i=0; $i -lt $clbEvents.Items.Count; $i++) { $clbEvents.SetItemChecked($i, $true) } })
 $btnNone.Add_Click({ for ($i=0; $i -lt $clbEvents.Items.Count; $i++) { $clbEvents.SetItemChecked($i, $false) } })
 
