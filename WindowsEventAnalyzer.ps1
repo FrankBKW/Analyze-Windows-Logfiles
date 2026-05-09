@@ -639,31 +639,46 @@ function New-SectionPanel($x, $y, $w, $h, $title) {
 # ════════════════════════════════════════════════════════════
 $script:startupScanResult = $null
 $startupComputer = $env:COMPUTERNAME
-try {
-    $progUI = New-ProgressForm -ComputerName $startupComputer
-    $progUI.Form.Show()
-    $progUI.Form.Refresh()
-    [System.Windows.Forms.Application]::DoEvents()
 
-    # Phase 1: Schnell-Scan – kleine Samples, kein Message-Lookup, kein Manifest-Scan
-    $discovered = Invoke-ComputerEventScan -Computer $startupComputer -ProgressUI $progUI `
-                      -MaxPerLog 15 -MaxLogs 120
-    $addedCount = Merge-DiscoveredEvents -Discovered $discovered
-    $logsCount  = $script:discoveredLogs.Count
+$dlgScan = [System.Windows.Forms.MessageBox]::Show(
+    "Lokalen Computer '$startupComputer' beim Start scannen?`n`n" +
+    "Der Schnell-Scan erkennt vorhandene Event-IDs und füllt die Ereignisauswahl automatisch.`n" +
+    "Bei ausschließlicher Remote-Nutzung oder für einen schnelleren Start kann dieser Schritt übersprungen werden.",
+    "Startup-Scan",
+    [System.Windows.Forms.MessageBoxButtons]::YesNo,
+    [System.Windows.Forms.MessageBoxIcon]::Question,
+    [System.Windows.Forms.MessageBoxDefaultButton]::Button1
+)
 
-    $progUI.Form.Close()
-    $progUI.Form.Dispose()
+if ($dlgScan -eq [System.Windows.Forms.DialogResult]::Yes) {
+    try {
+        $progUI = New-ProgressForm -ComputerName $startupComputer
+        $progUI.Form.Show()
+        $progUI.Form.Refresh()
+        [System.Windows.Forms.Application]::DoEvents()
 
-    if ($script:scanCancelled) {
-        $script:startupScanResult = "Scan vom Benutzer abgebrochen."
-    } else {
-        $script:startupScanResult = "Schnell-Scan: $addedCount IDs aus $logsCount Logs erkannt. Für Manifest-Scan: 'Scan + Manifest' nutzen."
+        # Phase 1: Schnell-Scan – kleine Samples, kein Message-Lookup, kein Manifest-Scan
+        $discovered = Invoke-ComputerEventScan -Computer $startupComputer -ProgressUI $progUI `
+                          -MaxPerLog 15 -MaxLogs 120
+        $addedCount = Merge-DiscoveredEvents -Discovered $discovered
+        $logsCount  = $script:discoveredLogs.Count
+
+        $progUI.Form.Close()
+        $progUI.Form.Dispose()
+
+        if ($script:scanCancelled) {
+            $script:startupScanResult = "Scan vom Benutzer abgebrochen."
+        } else {
+            $script:startupScanResult = "Schnell-Scan: $addedCount IDs aus $logsCount Logs erkannt. Für Manifest-Scan: 'Scan + Manifest' nutzen."
+        }
+    } catch {
+        if ($progUI -and $progUI.Form) {
+            try { $progUI.Form.Close(); $progUI.Form.Dispose() } catch {}
+        }
+        $script:startupScanResult = "Scan fehlgeschlagen: $($_.Exception.Message)"
     }
-} catch {
-    if ($progUI -and $progUI.Form) {
-        try { $progUI.Form.Close(); $progUI.Form.Dispose() } catch {}
-    }
-    $script:startupScanResult = "Scan fehlgeschlagen: $($_.Exception.Message)"
+} else {
+    $script:startupScanResult = "Startup-Scan übersprungen. Scan jederzeit über den 'Scan'-Button starten."
 }
 
 # ════════════════════════════════════════════════════════════
