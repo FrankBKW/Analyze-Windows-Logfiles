@@ -30,3 +30,4 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 - [2026-05-09 11:55:50] fix: Manifest-Scan - Security/System/Application von Provider-Enumeration ausgeschlossen (Fehler + Timeout)
 - [2026-05-09 12:22:11] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-09 12:22:31] Bearbeitet: WindowsEventAnalyzer.ps1
+- [2026-05-09 12:23:26] fix: Manifest-Scan - nur Security ausgeschlossen (System/Application/PowerShell wieder aktiv -> mehr Manifeste)
