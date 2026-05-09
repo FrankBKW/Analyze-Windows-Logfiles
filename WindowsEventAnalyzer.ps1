@@ -312,14 +312,15 @@ function Invoke-ComputerEventScan {
     param(
         [string]$Computer,
         $ProgressUI,
-        [int]$MaxPerLog = 500,
+        [int]$MaxPerLog  = 15,    # Klein halten: nur ID-Erkennung, kein Content nötig
+        [int]$MaxLogs    = 120,   # Top-N aktivste Logs – der Rest bringt kaum neue IDs
         [System.Management.Automation.PSCredential]$Credential = $null
     )
 
     $found = [System.Collections.Generic.List[PSObject]]::new()
     $script:scanCancelled = $false
 
-    # Schritt 1: Alle Logs ermitteln
+    # Schritt 1: Alle Logs ermitteln (nur Metadaten – sehr schnell)
     $ProgressUI.LblMain.Text = "Logs werden aufgelistet..."
     $ProgressUI.LblSub.Text  = "Get-WinEvent -ListLog *"
     [System.Windows.Forms.Application]::DoEvents()
@@ -327,63 +328,58 @@ function Invoke-ComputerEventScan {
     try {
         $listParams = @{ ListLog = '*'; ComputerName = $Computer; ErrorAction = 'Stop' }
         if ($Credential) { $listParams.Credential = $Credential }
+        # Nur aktive Logs, absteigend nach RecordCount, auf MaxLogs begrenzen
         $allLogs = Get-WinEvent @listParams |
                    Where-Object { $_.RecordCount -gt 0 -and $_.IsEnabled } |
-                   Sort-Object RecordCount -Descending
+                   Sort-Object RecordCount -Descending |
+                   Select-Object -First $MaxLogs
     } catch {
         $ProgressUI.LblMain.Text = "Fehler: $($_.Exception.Message)"
         Start-Sleep -Seconds 2
         return $null
     }
 
-    if (-not $allLogs -or $allLogs.Count -eq 0) {
-        return $found
-    }
+    if (-not $allLogs -or $allLogs.Count -eq 0) { return $found }
 
-    # Schritt 2: Pro Log Sample lesen
+    # Schritt 2: Pro Log kleines Sample lesen – nur zur ID-Erkennung
+    # WICHTIG: $event.Message NICHT verwenden – löst teure DLL-Formatierung aus!
     $ProgressUI.Bar.Maximum = $allLogs.Count
     $i = 0
     foreach ($log in $allLogs) {
         if ($script:scanCancelled) { break }
         $i++
-        $ProgressUI.Bar.Value   = $i
-        $ProgressUI.LblMain.Text = "Scanne Log $i von $($allLogs.Count): $($log.LogName)"
-        $ProgressUI.LblSub.Text  = "$($log.RecordCount) Einträge im Log"
+        $ProgressUI.Bar.Value    = $i
+        $ProgressUI.LblMain.Text = "Scanne Log $i / $($allLogs.Count): $($log.LogName)"
+        $ProgressUI.LblSub.Text  = "$($log.RecordCount) Einträge · lese $MaxPerLog Events..."
         [System.Windows.Forms.Application]::DoEvents()
 
         try {
-            $sampleParams = @{ LogName = $log.LogName; MaxEvents = $MaxPerLog; ComputerName = $Computer; ErrorAction = 'Stop' }
+            $sampleParams = @{
+                LogName      = $log.LogName
+                MaxEvents    = $MaxPerLog
+                ComputerName = $Computer
+                ErrorAction  = 'Stop'
+            }
             if ($Credential) { $sampleParams.Credential = $Credential }
             $sample = Get-WinEvent @sampleParams
 
-            # Nach ID gruppieren (gleiche ID kann mehrere Provider haben)
+            # Nach ID + Provider gruppieren – kein .Message-Zugriff (wäre langsam)
             $grouped = $sample | Group-Object -Property Id
             foreach ($g in $grouped) {
                 $first    = $g.Group[0]
                 $level    = $first.LevelDisplayName
                 $provider = $first.ProviderName
 
-                # Icon nach Level
                 $icon = switch ($level) {
-                    "Kritisch"      { "●" }
-                    "Critical"      { "●" }
-                    "Fehler"        { "●" }
-                    "Error"         { "●" }
-                    "Warnung"       { "▲" }
-                    "Warning"       { "▲" }
-                    "Information"   { "○" }
-                    "Informationen" { "○" }
+                    "Kritisch"      { "●" } "Critical"      { "●" }
+                    "Fehler"        { "●" } "Error"         { "●" }
+                    "Warnung"       { "▲" } "Warning"       { "▲" }
+                    "Information"   { "○" } "Informationen" { "○" }
                     default         { "◈" }
                 }
 
-                # Erste Zeile der Nachricht als Kurzbeschreibung
-                $msg = if ($first.Message) {
-                    ($first.Message -replace "`r`n|`n", " ").Trim()
-                } else { "" }
-                if ($msg.Length -gt 80) { $msg = $msg.Substring(0, 80) + "..." }
-                if ([string]::IsNullOrWhiteSpace($msg)) { $msg = "(keine Beschreibung)" }
-
-                $desc = "$msg  [Provider: $provider · $($g.Count)x im Sample]"
+                # Beschreibung ohne .Message → kein DLL-Aufruf
+                $desc = "[Provider: $provider · $($g.Count)x in Sample · Log: $($log.LogName)]"
 
                 $found.Add([PSCustomObject]@{
                     ID       = [int]$first.Id
@@ -394,7 +390,7 @@ function Invoke-ComputerEventScan {
                 })
             }
         } catch {
-            # Log nicht lesbar (Berechtigung, gesperrt, leer trotz RecordCount>0) - überspringen
+            # Log nicht lesbar (Berechtigung o.ä.) – überspringen
         }
     }
 
@@ -598,20 +594,11 @@ try {
     $progUI.Form.Refresh()
     [System.Windows.Forms.Application]::DoEvents()
 
-    $discovered  = Invoke-ComputerEventScan -Computer $startupComputer -ProgressUI $progUI -MaxPerLog 500
-    $addedCount  = Merge-DiscoveredEvents -Discovered $discovered
-
-    # Phase 2: Vollständige ID-Übersicht aus Provider-Manifesten ergänzen
-    $addedDocs = 0
-    if (-not $script:scanCancelled) {
-        $relevantLogs = @($discovered | Select-Object -ExpandProperty Log -Unique)
-        if ($relevantLogs.Count -gt 0) {
-            $documented = Invoke-DocumentedIDsScan -Computer $startupComputer -ProgressUI $progUI -LogNames $relevantLogs -Credential $null
-            $addedDocs  = Merge-DiscoveredEvents -Discovered $documented
-        }
-    }
-
-    $logsCount   = $script:discoveredLogs.Count
+    # Phase 1: Schnell-Scan – kleine Samples, kein Message-Lookup, kein Manifest-Scan
+    $discovered = Invoke-ComputerEventScan -Computer $startupComputer -ProgressUI $progUI `
+                      -MaxPerLog 15 -MaxLogs 120
+    $addedCount = Merge-DiscoveredEvents -Discovered $discovered
+    $logsCount  = $script:discoveredLogs.Count
 
     $progUI.Form.Close()
     $progUI.Form.Dispose()
@@ -619,7 +606,7 @@ try {
     if ($script:scanCancelled) {
         $script:startupScanResult = "Scan vom Benutzer abgebrochen."
     } else {
-        $script:startupScanResult = "Scan abgeschlossen: $addedCount erkannte + $addedDocs dokumentierte IDs aus $logsCount Logs."
+        $script:startupScanResult = "Schnell-Scan: $addedCount IDs aus $logsCount Logs erkannt. Für Manifest-Scan: '🔄 Scan' nutzen."
     }
 } catch {
     if ($progUI -and $progUI.Form) {
@@ -701,9 +688,17 @@ $txtComputer.Text      = $env:COMPUTERNAME
 $txtComputer.ForeColor = $clrText
 $pnlOptions.Controls.Add($txtComputer)
 
-# Re-Scan Button
-$btnRescan = New-StyledButton "🔄 Scan" 745 28 130 26 $false
+# Re-Scan Button + Manifest-Option
+$btnRescan = New-StyledButton "🔄 Scan" 700 28 110 26 $false
 $pnlOptions.Controls.Add($btnRescan)
+
+$chkManifest = New-Object System.Windows.Forms.CheckBox
+$chkManifest.Location = New-Object System.Drawing.Point(816, 30)
+$chkManifest.Size     = New-Object System.Drawing.Size(18, 18)
+$pnlOptions.Controls.Add($chkManifest)
+$lblManifest = New-Label "Manifest" 838 32 55 16 $false $true
+$lblManifest.Font = $fontSmall
+$pnlOptions.Controls.Add($lblManifest)
 
 # Hinweis
 $lblHint = New-Label "ℹ  Mehrere Computer: komma-getrennt  ·  'Scan' aktualisiert die Erkannt-Liste" 540 54 340 18 $false $true
@@ -1034,6 +1029,7 @@ $btnNone.Add_Click({ for ($i=0; $i -lt $clbEvents.Items.Count; $i++) { $clbEvent
 $btnRescan.Add_Click({
     $target = $txtComputer.Text.Trim()
     if ([string]::IsNullOrWhiteSpace($target)) { $target = $env:COMPUTERNAME }
+    $withManifest = $chkManifest.Checked
 
     # Vorhandene Erkannt- und Dokumentiert-Einträge entfernen
     $toRemove = @($eventCatalog | Where-Object { $_.Category -eq "Erkannt" -or $_.Category -eq "Dokumentiert" })
@@ -1046,12 +1042,15 @@ $btnRescan.Add_Click({
 
     try {
         $cred  = Get-FormCredential
-        $disc  = Invoke-ComputerEventScan -Computer $target -ProgressUI $progUI2 -MaxPerLog 500 -Credential $cred
+
+        # Phase 1: Schnell-Scan (immer)
+        $disc  = Invoke-ComputerEventScan -Computer $target -ProgressUI $progUI2 `
+                     -MaxPerLog 15 -MaxLogs 120 -Credential $cred
         $added = Merge-DiscoveredEvents -Discovered $disc
 
-        # Phase 2: Manifest-Übersicht
+        # Phase 2: Manifest-Scan (nur wenn Checkbox aktiv)
         $addedDocs2 = 0
-        if (-not $script:scanCancelled) {
+        if ($withManifest -and -not $script:scanCancelled) {
             $relLogs = @($disc | Select-Object -ExpandProperty Log -Unique)
             if ($relLogs.Count -gt 0) {
                 $docs2 = Invoke-DocumentedIDsScan -Computer $target -ProgressUI $progUI2 -LogNames $relLogs -Credential $cred
@@ -1065,9 +1064,9 @@ $btnRescan.Add_Click({
             $lblStatus.ForeColor = $clrMuted
             $lblStatus.Text = "Scan abgebrochen."
         } else {
+            $suffix = if ($withManifest) { " + $addedDocs2 dokumentierte IDs" } else { "" }
             $lblStatus.ForeColor = $clrSuccess
-            $lblStatus.Text = "✔ Scan abgeschlossen: $added erkannte + $addedDocs2 dokumentierte IDs aus $($script:discoveredLogs.Count) Logs."
-            # Auf Gefunden-Ansicht umschalten
+            $lblStatus.Text = "✔ Scan: $added erkannte IDs$suffix aus $($script:discoveredLogs.Count) Logs."
             $cbLog.SelectedItem = "🔍 Gefunden (alle Scan-Ergebnisse)"
         }
     } catch {
