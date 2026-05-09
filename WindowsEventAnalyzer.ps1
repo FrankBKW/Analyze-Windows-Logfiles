@@ -1639,6 +1639,42 @@ $btnXPath.Add_Click({
                 $lblXC2.Text = "Einträge: $($xFil.Count) / $($script:xSortedRef.Count)"
             })
 
+            # ── Detail-Anzeige ────────────────────────────────────────
+            $lblXDetail = New-Object System.Windows.Forms.Label
+            $lblXDetail.Location  = New-Object System.Drawing.Point(10, 622)
+            $lblXDetail.Size      = New-Object System.Drawing.Size(1115, 40)
+            $lblXDetail.Font      = $fontSmall
+            $lblXDetail.ForeColor = $clrMuted
+            $lblXDetail.Text      = "Zeile anklicken für vollständige Nachricht  |  Doppelklick für alle Details"
+            $fxOut.Controls.Add($lblXDetail)
+
+            $xdgv.Add_SelectionChanged({
+                if ($xdgv.SelectedRows.Count -gt 0) {
+                    $xRow = $xdgv.SelectedRows[0]
+                    $xMsg = $xRow.Cells["Nachricht"].Value
+                    $lblXDetail.Text      = "📄 " + $xMsg.Substring(0, [Math]::Min(200, $xMsg.Length))
+                    $lblXDetail.ForeColor = $clrText
+                }
+            })
+
+            $xdgv.Add_CellDoubleClick({
+                if ($xdgv.SelectedRows.Count -gt 0) {
+                    $xRow    = $xdgv.SelectedRows[0]
+                    $xRowIdx = $xRow.Index
+                    $xRef    = $script:xSortedRef
+                    # Vollständige Nachricht aus Datenquelle holen (nicht gekürztes DGV-Feld)
+                    $xFull   = if ($xRowIdx -lt $xRef.Count) { $xRef[$xRowIdx].Nachricht } else { $xRow.Cells["Nachricht"].Value }
+                    $xDetail = "Computer:    $($xRow.Cells['Computer'].Value)`n" +
+                               "Zeitstempel: $($xRow.Cells['Zeit'].Value)`n" +
+                               "Typ:         $($xRow.Cells['Typ'].Value)`n" +
+                               "EventID:     $($xRow.Cells['EventID'].Value)`n" +
+                               "Quelle:      $($xRow.Cells['Quelle'].Value)`n" +
+                               "Protokoll:   $($xRow.Cells['Protokoll'].Value)`n`n" +
+                               "--- Vollständige Nachricht ---`n" + $xFull
+                    [System.Windows.Forms.MessageBox]::Show($xDetail, "XPath Event-Detail", "OK", "Information") | Out-Null
+                }
+            })
+
             # ── CSV-Export ────────────────────────────────────────────
             $btnXE2.Add_Click({
                 $dlgX = New-Object System.Windows.Forms.SaveFileDialog
