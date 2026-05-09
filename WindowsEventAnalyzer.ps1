@@ -457,6 +457,11 @@ function Invoke-DocumentedIDsScan {
     $found = [System.Collections.Generic.List[PSObject]]::new()
     if (-not $LogNames -or $LogNames.Count -eq 0) { return $found }
 
+    # Klassische Logs überspringen – zu viele Provider, Security braucht erhöhte Rechte
+    $classicExclude = @("Security","System","Application","Windows PowerShell")
+    $LogNames = @($LogNames | Where-Object { $_ -notin $classicExclude })
+    if ($LogNames.Count -eq 0) { return $found }
+
     # 1) Provider sammeln, die in diese Logs schreiben
     $providers = New-Object System.Collections.Generic.HashSet[string]
     foreach ($logName in $LogNames) {
@@ -1229,9 +1234,13 @@ $btnRescan.Add_Click({
         $added = Merge-DiscoveredEvents -Discovered $disc
 
         # Phase 2: Manifest-Scan (nur wenn Checkbox aktiv)
+        # Klassische Logs ausschliessen: bereits im Katalog abgedeckt,
+        # Security braucht erhöhte Rechte und hat hunderte Provider.
+        $classicLogs = @("Security","System","Application","Windows PowerShell")
         $addedDocs2 = 0
         if ($withManifest -and -not $script:scanCancelled) {
-            $relLogs = @($disc | Select-Object -ExpandProperty Log -Unique)
+            $relLogs = @($disc | Select-Object -ExpandProperty Log -Unique |
+                         Where-Object { $_ -notin $classicLogs })
             if ($relLogs.Count -gt 0) {
                 $docs2 = Invoke-DocumentedIDsScan -Computer $target -ProgressUI $progUI2 -LogNames $relLogs -Credential $cred
                 $addedDocs2 = Merge-DiscoveredEvents -Discovered $docs2
