@@ -12,3 +12,4 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 - [2026-05-09 10:11:12] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-09 10:11:57] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-09 10:12:49] feat: XPath-Ergebnisfenster - Excel-Export und Zeitreihe-Diagramm hinzugefuegt
+- [2026-05-09 10:26:34] Bearbeitet: WindowsEventAnalyzer.ps1
