@@ -88,10 +88,17 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 
 ## Installation & Start
 
-1. **Script herunterladen** oder in ein beliebiges Verzeichnis legen:
-   ```
-   WindowsEventAnalyzer.ps1
-   ```
+### Option A – EXE (empfohlen, kein PowerShell-Wissen nötig)
+
+1. **`WindowsEventAnalyzer.exe`** aus dem Release herunterladen.
+2. **Doppelklick** auf die EXE – Windows fragt automatisch nach Administrator-Rechten (UAC-Dialog).
+3. Fertig. Keine Installation, keine PowerShell-Konfiguration erforderlich.
+
+> **Hinweis:** Da die EXE mit ps2exe aus dem PowerShell-Script gebaut wurde, kann Windows Defender oder ein Virenscanner beim ersten Start warnen. Dies ist ein bekanntes Verhalten bei mit ps2exe kompilierten Scripten. Die Quelldatei (`WindowsEventAnalyzer.ps1`) liegt offen zur Prüfung im Repository.
+
+### Option B – PowerShell-Script (für Anpassungen / Entwicklung)
+
+1. **`WindowsEventAnalyzer.ps1`** herunterladen oder in ein beliebiges Verzeichnis legen.
 
 2. **Als Administrator starten** – Rechtsklick auf PowerShell → *Als Administrator ausführen*:
    ```powershell
