@@ -1455,6 +1455,36 @@ $toolTip.SetToolTip($btnBeenden,
     "Programm beenden.")
 
 $btnXPath.Add_Click({
+    # ── Filter-Voreinstellung aus Hauptformular ──────────────────
+    $xpZeitMs = switch ($cbZeit.SelectedItem) {
+        "Letzte 1 Stunde"   { 3600000 }
+        "Letzte 6 Stunden"  { 21600000 }
+        "Letzte 24 Stunden" { 86400000 }
+        "Letzte 7 Tage"     { 604800000 }
+        "Letzte 30 Tage"    { 2592000000 }
+        default             { $null }
+    }
+    $xpAutoXPath = if ($xpZeitMs) {
+        "*[System[TimeCreated[timediff(@SystemTime) <= $xpZeitMs]]]"
+    } else {
+        "*[System[*]]"
+    }
+    $xpLogMap = @{
+        "System"           = "System"
+        "Security"         = "Security"
+        "Application"      = "Application"
+        "PowerShell"       = "Microsoft-Windows-PowerShell/Operational"
+        "Windows Defender" = "Microsoft-Windows-Windows Defender/Operational"
+        "Task Scheduler"   = "Microsoft-Windows-TaskScheduler/Operational"
+        "Remote Desktop"   = "Microsoft-Windows-TerminalServices-LocalSessionManager/Operational"
+        "Druckerdienst"    = "Microsoft-Windows-PrintService/Operational"
+        "BitLocker"        = "Microsoft-Windows-BitLocker/BitLocker Management"
+        "SMB Client"       = "Microsoft-Windows-SMBClient/Operational"
+    }
+    $xpLogDefault = if ($xpLogMap.ContainsKey($cbLog.SelectedItem.ToString())) {
+        $xpLogMap[$cbLog.SelectedItem.ToString()]
+    } else { "System" }
+
     # ── XPath-Dialog ──────────────────────────────────────────────
     $fxp = New-Object System.Windows.Forms.Form
     $fxp.Text            = "XPath-Direktabfrage"
@@ -1485,7 +1515,7 @@ $btnXPath.Add_Click({
       "Microsoft-Windows-TerminalServices-LocalSessionManager/Operational",
       "Microsoft-Windows-TerminalServices-RemoteConnectionManager/Operational"
     ) | ForEach-Object { $cbXLog.Items.Add($_) | Out-Null }
-    $cbXLog.Text = "System"; $fxp.Controls.Add($cbXLog)
+    $cbXLog.Text = $xpLogDefault; $fxp.Controls.Add($cbXLog)
 
     # Computer (aus Hauptformular vorbelegen)
     $fxp.Controls.Add((New-Label "Computer:" 455 66 68 20 $true))
@@ -1499,7 +1529,9 @@ $btnXPath.Add_Click({
     $cbXMax.Location = New-Object System.Drawing.Point(115, 96); $cbXMax.Size = New-Object System.Drawing.Size(80, 22)
     $cbXMax.DropDownStyle = "DropDownList"
     @(25,50,100,250,500) | ForEach-Object { $cbXMax.Items.Add($_) | Out-Null }
-    $cbXMax.SelectedIndex = 2; $fxp.Controls.Add($cbXMax)
+    $cbXMax.SelectedItem = $cbMax.SelectedItem
+    if ($cbXMax.SelectedIndex -lt 0) { $cbXMax.SelectedIndex = 2 }
+    $fxp.Controls.Add($cbXMax)
 
     # XPath-Filter
     $fxp.Controls.Add((New-Label "XPath-Filter:" 15 130 85 20 $true))
@@ -1507,10 +1539,10 @@ $btnXPath.Add_Click({
     $txtXPath2.Location  = New-Object System.Drawing.Point(15, 152)
     $txtXPath2.Size      = New-Object System.Drawing.Size(668, 100)
     $txtXPath2.Multiline = $true; $txtXPath2.Font = $fontMono; $txtXPath2.ScrollBars = "Vertical"
-    $txtXPath2.Text = "*[System[(Level=1 or Level=2) and TimeCreated[timediff(@SystemTime) <= 86400000]]]"
+    $txtXPath2.Text = $xpAutoXPath
     $fxp.Controls.Add($txtXPath2)
 
-    $lblXEx = New-Label "z.B.: *[System[EventID=4625 and TimeCreated[timediff(@SystemTime) <= 3600000]]]" 15 258 668 18 $false $true
+    $lblXEx = New-Label "Vorbelegt aus Hauptfenster-Einstellungen  |  z.B.: *[System[EventID=4625 and TimeCreated[timediff(@SystemTime) <= 3600000]]]" 15 258 668 18 $false $true
     $lblXEx.Font = $fontSmall; $fxp.Controls.Add($lblXEx)
 
     $btnXRun    = New-StyledButton "Abfragen" 455 285 115 32 $true
