@@ -667,7 +667,7 @@ try {
 # ════════════════════════════════════════════════════════════
 $formMain = New-Object System.Windows.Forms.Form
 $formMain.Text            = "Windows Event Viewer – Abfrage-Tool"
-$formMain.Size            = New-Object System.Drawing.Size(920, 880)
+$formMain.Size            = New-Object System.Drawing.Size(920, 845)
 $formMain.StartPosition   = "CenterScreen"
 $formMain.BackColor       = $clrBg
 $formMain.FormBorderStyle = "FixedSingle"
@@ -699,7 +699,7 @@ $lblSubtitle.BackColor = $clrAccent
 $pnlTitle.Controls.Add($lblSubtitle)
 
 # ── Sektion: Filter-Optionen ──────────────────────────────────
-$pnlOptions = New-SectionPanel 15 75 885 190 "Abfrage-Optionen"
+$pnlOptions = New-SectionPanel 15 75 885 160 "Abfrage-Optionen"
 $formMain.Controls.Add($pnlOptions)
 
 # Zeitraum
@@ -715,10 +715,10 @@ $cbZeit.SelectedIndex = 2
 $pnlOptions.Controls.Add($cbZeit)
 
 # Max. Einträge
-$pnlOptions.Controls.Add((New-Label "Max. Einträge:" 265 32 95 20))
+$pnlOptions.Controls.Add((New-Label "Max. Einträge:" 255 32 95 20))
 $cbMax = New-Object System.Windows.Forms.ComboBox
-$cbMax.Location      = New-Object System.Drawing.Point(365, 30)
-$cbMax.Size          = New-Object System.Drawing.Size(80, 22)
+$cbMax.Location      = New-Object System.Drawing.Point(355, 30)
+$cbMax.Size          = New-Object System.Drawing.Size(70, 22)
 $cbMax.DropDownStyle = "DropDownList"
 $cbMax.Font          = $fontNormal
 @(25, 50, 100, 250, 500) | ForEach-Object { $cbMax.Items.Add($_) | Out-Null }
@@ -726,31 +726,26 @@ $cbMax.SelectedIndex = 1
 $pnlOptions.Controls.Add($cbMax)
 
 # Computer
-$pnlOptions.Controls.Add((New-Label "Computer:" 465 32 70 20))
+$pnlOptions.Controls.Add((New-Label "Computer:" 435 32 70 20))
 $txtComputer = New-Object System.Windows.Forms.TextBox
-$txtComputer.Location  = New-Object System.Drawing.Point(540, 30)
-$txtComputer.Size      = New-Object System.Drawing.Size(195, 22)
+$txtComputer.Location  = New-Object System.Drawing.Point(508, 30)
+$txtComputer.Size      = New-Object System.Drawing.Size(198, 22)
 $txtComputer.Font      = $fontNormal
 $txtComputer.Text      = $env:COMPUTERNAME
 $txtComputer.ForeColor = $clrText
 $pnlOptions.Controls.Add($txtComputer)
 
 # Re-Scan Button + Manifest-Option
-$btnRescan = New-StyledButton "Scan" 700 28 110 26 $false
+$btnRescan = New-StyledButton "Scan" 714 28 80 26 $false
 $pnlOptions.Controls.Add($btnRescan)
 
 $chkManifest = New-Object System.Windows.Forms.CheckBox
-$chkManifest.Location = New-Object System.Drawing.Point(816, 30)
+$chkManifest.Location = New-Object System.Drawing.Point(800, 30)
 $chkManifest.Size     = New-Object System.Drawing.Size(18, 18)
 $pnlOptions.Controls.Add($chkManifest)
-$lblManifest = New-Label "Manifest" 838 32 55 16 $false $true
+$lblManifest = New-Label "Manifest" 820 32 52 16 $false $true
 $lblManifest.Font = $fontSmall
 $pnlOptions.Controls.Add($lblManifest)
-
-# Hinweis
-$lblHint = New-Label "ℹ  Mehrere Computer: komma-getrennt  ·  'Scan' aktualisiert die Erkannt-Liste" 540 54 340 18 $false $true
-$lblHint.Font = $fontSmall
-$pnlOptions.Controls.Add($lblHint)
 
 # ── Credentials (Zeile 2) ─────────────────────────────────────
 $pnlOptions.Controls.Add((New-Label "Domain:" 10 70 55 20))
@@ -767,15 +762,15 @@ $txtUser.Size      = New-Object System.Drawing.Size(155, 22)
 $txtUser.Font      = $fontNormal
 $pnlOptions.Controls.Add($txtUser)
 
-$pnlOptions.Controls.Add((New-Label "Passwort:" 445 70 65 20))
+$pnlOptions.Controls.Add((New-Label "Passwort:" 440 70 65 20))
 $txtPass = New-Object System.Windows.Forms.TextBox
-$txtPass.Location     = New-Object System.Drawing.Point(513, 68)
+$txtPass.Location     = New-Object System.Drawing.Point(508, 68)
 $txtPass.Size         = New-Object System.Drawing.Size(155, 22)
 $txtPass.Font         = $fontNormal
 $txtPass.PasswordChar = '*'
 $pnlOptions.Controls.Add($txtPass)
 
-$lblCredHint = New-Label "ℹ  Leer lassen = aktuelle Windows-Anmeldung" 685 71 250 18 $false $true
+$lblCredHint = New-Label "Leer = aktuelle Windows-Anmeldung" 671 71 205 18 $false $true
 $lblCredHint.Font = $fontSmall
 $pnlOptions.Controls.Add($lblCredHint)
 
@@ -783,13 +778,13 @@ $pnlOptions.Controls.Add($lblCredHint)
 $pnlOptions.Controls.Add((New-Label "Profil:" 10 112 65 20 $true))
 $cbProfile = New-Object System.Windows.Forms.ComboBox
 $cbProfile.Location      = New-Object System.Drawing.Point(78, 110)
-$cbProfile.Size          = New-Object System.Drawing.Size(185, 22)
+$cbProfile.Size          = New-Object System.Drawing.Size(145, 22)
 $cbProfile.Font          = $fontNormal
 $cbProfile.DropDownStyle = "DropDown"
 $pnlOptions.Controls.Add($cbProfile)
 
-$btnLoadProfile = New-StyledButton "Laden"     270 108 95 26 $false
-$btnSaveProfile = New-StyledButton "Speichern" 372 108 115 26 $false
+$btnLoadProfile = New-StyledButton "Laden"     230 108 85 26 $false
+$btnSaveProfile = New-StyledButton "Speichern" 322 108 100 26 $false
 $pnlOptions.Controls.Add($btnLoadProfile)
 $pnlOptions.Controls.Add($btnSaveProfile)
 
@@ -797,27 +792,97 @@ $btnLoadProfile.Add_Click({ Load-Profile $cbProfile.Text })
 $btnSaveProfile.Add_Click({ Save-Profile $cbProfile.Text })
 
 # ── Zeile 3: Live-Modus ───────────────────────────────────────
-$pnlOptions.Controls.Add((New-Label "Live-Modus:" 505 112 80 20 $true))
+$pnlOptions.Controls.Add((New-Label "Live-Modus:" 432 112 80 20 $true))
 $chkLive = New-Object System.Windows.Forms.CheckBox
-$chkLive.Location = New-Object System.Drawing.Point(600, 111)
+$chkLive.Location = New-Object System.Drawing.Point(516, 111)
 $chkLive.Size     = New-Object System.Drawing.Size(18, 18)
 $pnlOptions.Controls.Add($chkLive)
 
 $cbLiveInterval = New-Object System.Windows.Forms.ComboBox
-$cbLiveInterval.Location      = New-Object System.Drawing.Point(623, 110)
-$cbLiveInterval.Size          = New-Object System.Drawing.Size(90, 22)
+$cbLiveInterval.Location      = New-Object System.Drawing.Point(538, 110)
+$cbLiveInterval.Size          = New-Object System.Drawing.Size(105, 22)
 $cbLiveInterval.DropDownStyle = "DropDownList"
 $cbLiveInterval.Font          = $fontNormal
 @("30 Sek","1 Minute","5 Minuten","10 Minuten") | ForEach-Object { $cbLiveInterval.Items.Add($_) | Out-Null }
 $cbLiveInterval.SelectedIndex = 1
 $pnlOptions.Controls.Add($cbLiveInterval)
 
-$lblLiveHint = New-Label "ℹ  Aktualisiert Ergebnisse automatisch" 720 113 220 18 $false $true
+$lblLiveHint = New-Label "Autom. Aktualisierung der Ergebnisse" 650 113 220 18 $false $true
 $lblLiveHint.Font = $fontSmall
 $pnlOptions.Controls.Add($lblLiveHint)
 
 # Profilliste initialisieren
 Refresh-ProfileList
+
+# ── Tooltips für alle Steuerelemente ─────────────────────────
+$toolTip = New-Object System.Windows.Forms.ToolTip
+$toolTip.AutoPopDelay = 9000
+$toolTip.InitialDelay = 450
+$toolTip.ReshowDelay  = 200
+$toolTip.ShowAlways   = $true
+
+$toolTip.SetToolTip($cbZeit,
+    "Zeitraum der abzufragenden Windows-Ereignisse.`n" +
+    "Kleiner Zeitraum = schnellere Abfrage.`n`n" +
+    "Empfehlung: 'Letzte 24 Stunden' für schnellen Überblick.")
+
+$toolTip.SetToolTip($cbMax,
+    "Maximale Anzahl Einträge pro Log-Abfrage.`n" +
+    "Kleinerer Wert = schnellere Abfrage, weniger Treffer.`n`n" +
+    "Hinweis: Bei Mehrfach-Auswahl wird dieser Wert je Event-Gruppe angewendet.")
+
+$toolTip.SetToolTip($txtComputer,
+    "Hostname oder IP-Adresse des Ziel-Computers.`n" +
+    "Mehrere Computer kommagetrennt eingeben: PC1, PC2, SRV01`n`n" +
+    "Leer lassen = lokaler Computer wird abgefragt.")
+
+$toolTip.SetToolTip($btnRescan,
+    "Schnell-Scan des Computers: erkennt aktiv vorhandene Event-IDs`n" +
+    "in den wichtigsten Logs und ergänzt die 'Erkannt'-Liste.`n`n" +
+    "Manifest-Checkbox aktivieren für tieferen Scan.")
+
+$toolTip.SetToolTip($chkManifest,
+    "Manifest-Scan aktivieren: liest zusätzlich alle dokumentierten`n" +
+    "Event-IDs aus Provider-Manifesten (langsamer, umfassender).")
+
+$toolTip.SetToolTip($lblManifest,
+    "Manifest-Scan aktivieren: liest zusätzlich alle dokumentierten`n" +
+    "Event-IDs aus Provider-Manifesten (langsamer, umfassender).")
+
+$toolTip.SetToolTip($txtDomain,
+    "Active-Directory-Domäne für den Remote-Zugriff.`n" +
+    "Beispiel: FIRMA oder firma.local`n`n" +
+    "Leer lassen = lokales Konto wird verwendet.")
+
+$toolTip.SetToolTip($txtUser,
+    "Benutzername für den Remote-Zugriff auf den Ziel-Computer.`n`n" +
+    "Leer lassen = aktuelle Windows-Anmeldung wird verwendet.")
+
+$toolTip.SetToolTip($txtPass,
+    "Passwort für den Remote-Zugriff (wird nicht gespeichert).`n`n" +
+    "Leer lassen = aktuelle Windows-Anmeldung wird verwendet.")
+
+$toolTip.SetToolTip($cbProfile,
+    "Name des Abfrage-Profils.`n" +
+    "Profile speichern die Event-Auswahl, den Zeitraum und das Max-Limit.`n`n" +
+    "Namen eingeben und 'Speichern' klicken, um ein neues Profil anzulegen.")
+
+$toolTip.SetToolTip($btnLoadProfile,
+    "Gespeichertes Profil laden:`n" +
+    "Stellt die gespeicherte Event-Auswahl, Zeitraum und Max-Limit wieder her.")
+
+$toolTip.SetToolTip($btnSaveProfile,
+    "Aktuelle Event-Auswahl als Profil speichern.`n" +
+    "Profile werden lokal als JSON-Dateien gespeichert.")
+
+$toolTip.SetToolTip($chkLive,
+    "Live-Modus aktivieren: Die Ergebnisliste wird automatisch`n" +
+    "im eingestellten Zeitintervall aktualisiert.`n`n" +
+    "Hinweis: Erhöht die Last auf dem Ziel-Computer.")
+
+$toolTip.SetToolTip($cbLiveInterval,
+    "Zeitintervall für die automatische Aktualisierung im Live-Modus.`n" +
+    "Kürzere Intervalle = aktueller, aber mehr Netzwerkverkehr.")
 
 function Get-FormCredential {
     $user = $txtUser.Text.Trim()
@@ -916,7 +981,7 @@ $script:liveDgv      = $null         # Referenz auf aktives DataGridView
 $script:liveDataRef  = $null         # Referenz auf $sorted der aktuellen Abfrage
 
 # ── Sektion: Event-Auswahl ────────────────────────────────────
-$pnlEvents = New-SectionPanel 15 275 885 370 "Events auswählen  (Mehrfachauswahl per Checkbox)"
+$pnlEvents = New-SectionPanel 15 245 885 370 "Events auswählen  (Mehrfachauswahl per Checkbox)"
 $formMain.Controls.Add($pnlEvents)
 
 # Kategorie-Filter Dropdown
@@ -1066,6 +1131,31 @@ function Update-EventList {
     $lblCatCount.Text = "$($script:visibleEvents.Count) Einträge"
 }
 
+# Tooltips: Event-Auswahl-Sektion
+$toolTip.SetToolTip($cbKat,
+    "Filtert die Event-Liste nach Schweregrad/Kategorie.`n`n" +
+    "Kritisch / Fehler / Warnung / Information = Windows-Schweregrade`n" +
+    "Erkannt = auf diesem Computer gefundene Events`n" +
+    "Eigene  = manuell hinzugefügte Event-IDs")
+
+$toolTip.SetToolTip($cbLog,
+    "Filtert die Event-Liste nach Log-Bereich.`n`n" +
+    ">> Gefunden = alle erkannten und dokumentierten Scan-Ergebnisse`n" +
+    "★ Empfohlen = kuratierte, praxiserprobte Event-IDs`n" +
+    "◈ Erkannt   = aktiv auf dem Computer vorhandene Events`n" +
+    "= Dokumentiert = aus Provider-Manifesten (Manifest-Scan)")
+
+$toolTip.SetToolTip($btnAll,
+    "Alle sichtbaren Events in der Liste ankreuzen.")
+
+$toolTip.SetToolTip($btnNone,
+    "Alle Häkchen in der Liste entfernen.")
+
+$toolTip.SetToolTip($clbEvents,
+    "Event-Auswahlliste: Gewünschte Event-IDs ankreuzen.`n" +
+    "Ein Klick auf einen Eintrag zeigt unten die vollständige Beschreibung.`n`n" +
+    "Format: [Icon]  ID [Nummer]  [Log]  [Kategorie]  Beschreibung")
+
 # Filter-Events verdrahten
 $cbKat.Add_SelectedIndexChanged({ Update-EventList })
 $cbLog.Add_SelectedIndexChanged({ Update-EventList })
@@ -1134,7 +1224,7 @@ if ($hasFindings) {
 }
 
 # ── Sektion: Eigene Event-IDs ─────────────────────────────────
-$pnlCustom = New-SectionPanel 15 655 885 85 "+  Eigene Event-ID hinzufügen"
+$pnlCustom = New-SectionPanel 15 625 885 85 "+  Eigene Event-ID hinzufügen"
 $formMain.Controls.Add($pnlCustom)
 
 # Event-ID
@@ -1252,7 +1342,7 @@ $btnCustomAdd.Add_Click({
 
 # Beschreibungs-Label
 $lblDesc = New-Object System.Windows.Forms.Label
-$lblDesc.Location  = New-Object System.Drawing.Point(15, 748)
+$lblDesc.Location  = New-Object System.Drawing.Point(15, 718)
 $lblDesc.Size      = New-Object System.Drawing.Size(885, 22)
 $lblDesc.Font      = $fontSmall
 $lblDesc.ForeColor = $clrMuted
@@ -1269,16 +1359,50 @@ $clbEvents.Add_SelectedIndexChanged({
 })
 
 # ── Aktions-Buttons ───────────────────────────────────────────
-$btnAbfragen = New-StyledButton "Abfragen" 700 785 200 42 $true
+$btnAbfragen = New-StyledButton "Abfragen" 700 748 200 42 $true
 $btnAbfragen.Font = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
 $formMain.Controls.Add($btnAbfragen)
 
-$btnBeenden = New-StyledButton "Beenden" 15 785 100 42 $false
+$btnBeenden = New-StyledButton "Beenden" 15 748 100 42 $false
 $formMain.Controls.Add($btnBeenden)
 $btnBeenden.Add_Click({ $formMain.Close() })
 
-$btnXPath = New-StyledButton "XPath-Abfrage" 560 785 130 42 $false
+$btnXPath = New-StyledButton "XPath-Abfrage" 560 748 130 42 $false
 $formMain.Controls.Add($btnXPath)
+
+# Tooltips: Eigene Event-ID Sektion
+$toolTip.SetToolTip($txtCustomID,
+    "Numerische Event-ID, die hinzugefügt werden soll.`n" +
+    "Beispiel: 4625 (fehlgeschlagene Anmeldung)")
+
+$toolTip.SetToolTip($cbCustomLog,
+    "Windows-Ereignisprotokoll, zu dem die ID gehört.`n" +
+    "Auswahl wählen oder eigenen Log-Namen eingeben.`n`n" +
+    "Den Log-Namen finden Sie in der Ereignisanzeige`n" +
+    "unter Protokolleigenschaften.")
+
+$toolTip.SetToolTip($txtCustomDesc,
+    "Optionale Beschreibung für diese Event-ID.`n" +
+    "Wird in der Event-Liste angezeigt.")
+
+$toolTip.SetToolTip($btnCustomAdd,
+    "Eigene Event-ID zur Auswahlliste hinzufügen.`n" +
+    "Der Eintrag erscheint in der Kategorie 'Eigene'.")
+
+# Tooltips: Aktions-Buttons
+$toolTip.SetToolTip($btnAbfragen,
+    "Windows-Ereignisprotokoll mit allen angekreuzten Event-IDs abfragen.`n" +
+    "Das Ergebnis wird in einem neuen Fenster angezeigt.`n`n" +
+    "Tipp: Zeitraum und Max. Einträge oben anpassen,`n" +
+    "um die Abfrage zu beschleunigen.")
+
+$toolTip.SetToolTip($btnXPath,
+    "XPath-Direktabfrage öffnen: Freies XPath-Filterfeld`n" +
+    "für erweiterte Filterung des Windows-Ereignisprotokolls.`n`n" +
+    "Beispiel: *[System[EventID=4625]]")
+
+$toolTip.SetToolTip($btnBeenden,
+    "Programm beenden.")
 
 $btnXPath.Add_Click({
     # ── XPath-Dialog ──────────────────────────────────────────────
