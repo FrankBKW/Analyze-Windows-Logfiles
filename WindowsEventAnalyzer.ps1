@@ -303,7 +303,7 @@ function New-ProgressForm {
     $pf.Controls.Add($pnlHead)
 
     $lblHead = New-Object System.Windows.Forms.Label
-    $lblHead.Text      = "  ⏳  Scanne Computer: $ComputerName"
+    $lblHead.Text      = "  Scanne Computer: $ComputerName"
     $lblHead.Dock      = "Fill"
     $lblHead.Font      = $fontTitle
     $lblHead.ForeColor = [System.Drawing.Color]::White
@@ -653,7 +653,7 @@ try {
     if ($script:scanCancelled) {
         $script:startupScanResult = "Scan vom Benutzer abgebrochen."
     } else {
-        $script:startupScanResult = "Schnell-Scan: $addedCount IDs aus $logsCount Logs erkannt. Für Manifest-Scan: '🔄 Scan' nutzen."
+        $script:startupScanResult = "Schnell-Scan: $addedCount IDs aus $logsCount Logs erkannt. Für Manifest-Scan: 'Scan + Manifest' nutzen."
     }
 } catch {
     if ($progUI -and $progUI.Form) {
@@ -682,7 +682,7 @@ $pnlTitle.BackColor = $clrAccent
 $formMain.Controls.Add($pnlTitle)
 
 $lblTitle = New-Object System.Windows.Forms.Label
-$lblTitle.Text      = "  🔍  Windows Event Abfrage-Tool"
+$lblTitle.Text      = "  Windows Event Abfrage-Tool"
 $lblTitle.Dock      = "Fill"
 $lblTitle.Font      = $fontTitle
 $lblTitle.ForeColor = [System.Drawing.Color]::White
@@ -699,7 +699,7 @@ $lblSubtitle.BackColor = $clrAccent
 $pnlTitle.Controls.Add($lblSubtitle)
 
 # ── Sektion: Filter-Optionen ──────────────────────────────────
-$pnlOptions = New-SectionPanel 15 75 885 190 "⚙  Abfrage-Optionen"
+$pnlOptions = New-SectionPanel 15 75 885 190 "Abfrage-Optionen"
 $formMain.Controls.Add($pnlOptions)
 
 # Zeitraum
@@ -736,7 +736,7 @@ $txtComputer.ForeColor = $clrText
 $pnlOptions.Controls.Add($txtComputer)
 
 # Re-Scan Button + Manifest-Option
-$btnRescan = New-StyledButton "🔄 Scan" 700 28 110 26 $false
+$btnRescan = New-StyledButton "Scan" 700 28 110 26 $false
 $pnlOptions.Controls.Add($btnRescan)
 
 $chkManifest = New-Object System.Windows.Forms.CheckBox
@@ -780,7 +780,7 @@ $lblCredHint.Font = $fontSmall
 $pnlOptions.Controls.Add($lblCredHint)
 
 # ── Zeile 3: Auswahl-Profile ──────────────────────────────────
-$pnlOptions.Controls.Add((New-Label "📋 Profil:" 10 112 65 20 $true))
+$pnlOptions.Controls.Add((New-Label "Profil:" 10 112 65 20 $true))
 $cbProfile = New-Object System.Windows.Forms.ComboBox
 $cbProfile.Location      = New-Object System.Drawing.Point(78, 110)
 $cbProfile.Size          = New-Object System.Drawing.Size(185, 22)
@@ -788,8 +788,8 @@ $cbProfile.Font          = $fontNormal
 $cbProfile.DropDownStyle = "DropDown"
 $pnlOptions.Controls.Add($cbProfile)
 
-$btnLoadProfile = New-StyledButton "📂 Laden"  270 108 95 26 $false
-$btnSaveProfile = New-StyledButton "💾 Speichern" 372 108 115 26 $false
+$btnLoadProfile = New-StyledButton "Laden"     270 108 95 26 $false
+$btnSaveProfile = New-StyledButton "Speichern" 372 108 115 26 $false
 $pnlOptions.Controls.Add($btnLoadProfile)
 $pnlOptions.Controls.Add($btnSaveProfile)
 
@@ -797,7 +797,7 @@ $btnLoadProfile.Add_Click({ Load-Profile $cbProfile.Text })
 $btnSaveProfile.Add_Click({ Save-Profile $cbProfile.Text })
 
 # ── Zeile 3: Live-Modus ───────────────────────────────────────
-$pnlOptions.Controls.Add((New-Label "⟳ Live-Modus:" 505 112 90 20 $true))
+$pnlOptions.Controls.Add((New-Label "Live-Modus:" 505 112 80 20 $true))
 $chkLive = New-Object System.Windows.Forms.CheckBox
 $chkLive.Location = New-Object System.Drawing.Point(600, 111)
 $chkLive.Size     = New-Object System.Drawing.Size(18, 18)
@@ -916,7 +916,7 @@ $script:liveDgv      = $null         # Referenz auf aktives DataGridView
 $script:liveDataRef  = $null         # Referenz auf $sorted der aktuellen Abfrage
 
 # ── Sektion: Event-Auswahl ────────────────────────────────────
-$pnlEvents = New-SectionPanel 15 275 885 370 "📋  Events auswählen  (Mehrfachauswahl per Checkbox)"
+$pnlEvents = New-SectionPanel 15 275 885 370 "Events auswählen  (Mehrfachauswahl per Checkbox)"
 $formMain.Controls.Add($pnlEvents)
 
 # Kategorie-Filter Dropdown
@@ -940,10 +940,10 @@ $cbLog.DropDownStyle = "DropDownList"
 $cbLog.Font          = $fontNormal
 @(
     "Alle Bereiche",
-    "🔍 Gefunden (alle Scan-Ergebnisse)",
+    ">> Gefunden (alle Scan-Ergebnisse)",
     "★ Empfohlen (kuratiert)",
     "◈ Erkannt auf Computer",
-    "📚 Dokumentiert (Manifest)",
+    "= Dokumentiert (Manifest)",
     "System",
     "Security",
     "Application",
@@ -961,8 +961,8 @@ $cbLog.SelectedIndex = 0
 $pnlEvents.Controls.Add($cbLog)
 
 # Alle/Keine Buttons
-$btnAll  = New-StyledButton "✔ Alle"  545 30 85 24 $false
-$btnNone = New-StyledButton "✖ Keine" 640 30 85 24 $false
+$btnAll  = New-StyledButton "[+] Alle"  545 30 85 24 $false
+$btnNone = New-StyledButton "[-] Keine" 640 30 85 24 $false
 $pnlEvents.Controls.Add($btnAll)
 $pnlEvents.Controls.Add($btnNone)
 
@@ -1031,7 +1031,7 @@ function Update-EventList {
     $filterLog = $cbLog.SelectedItem
 
     # Bei Scan-Ergebnis-Ansichten nach Log und ID sortieren - sonst Katalog-Reihenfolge
-    $isScanView = $filterLog -in @("🔍 Gefunden (alle Scan-Ergebnisse)", "◈ Erkannt auf Computer", "📚 Dokumentiert (Manifest)")
+    $isScanView = $filterLog -in @(">> Gefunden (alle Scan-Ergebnisse)", "◈ Erkannt auf Computer", "= Dokumentiert (Manifest)")
     $iterList = if ($isScanView) {
         $eventCatalog | Sort-Object Log, ID
     } else {
@@ -1044,10 +1044,10 @@ function Update-EventList {
         # Sonderfälle für die Bereichs-Filter
         $showLog = switch ($filterLog) {
             "Alle Bereiche"                       { $true }
-            "🔍 Gefunden (alle Scan-Ergebnisse)"  { $ev.Category -eq "Erkannt" -or $ev.Category -eq "Dokumentiert" }
+            ">> Gefunden (alle Scan-Ergebnisse)"  { $ev.Category -eq "Erkannt" -or $ev.Category -eq "Dokumentiert" }
             "★ Empfohlen (kuratiert)"             { $ev.Category -ne "Erkannt" -and $ev.Category -ne "Eigene" -and $ev.Category -ne "Dokumentiert" }
             "◈ Erkannt auf Computer"              { $ev.Category -eq "Erkannt" }
-            "📚 Dokumentiert (Manifest)"          { $ev.Category -eq "Dokumentiert" }
+            "= Dokumentiert (Manifest)"          { $ev.Category -eq "Dokumentiert" }
             "Eigene IDs"                          { $ev.Category -eq "Eigene" }
             default {
                 if ($script:logGroupMap.ContainsKey($filterLog)) {
@@ -1114,7 +1114,7 @@ $btnRescan.Add_Click({
             $suffix = if ($withManifest) { " + $addedDocs2 dokumentierte IDs" } else { "" }
             $lblStatus.ForeColor = $clrSuccess
             $lblStatus.Text = "✔ Scan: $added erkannte IDs$suffix aus $($script:discoveredLogs.Count) Logs."
-            $cbLog.SelectedItem = "🔍 Gefunden (alle Scan-Ergebnisse)"
+            $cbLog.SelectedItem = ">> Gefunden (alle Scan-Ergebnisse)"
         }
     } catch {
         try { $progUI2.Form.Close(); $progUI2.Form.Dispose() } catch {}
@@ -1128,13 +1128,13 @@ $btnRescan.Add_Click({
 # Wenn der Startup-Scan etwas gefunden hat: Filter auf "Gefunden" voreinstellen
 $hasFindings = ($eventCatalog | Where-Object { $_.Category -eq "Erkannt" -or $_.Category -eq "Dokumentiert" } | Select-Object -First 1)
 if ($hasFindings) {
-    $cbLog.SelectedItem = "🔍 Gefunden (alle Scan-Ergebnisse)"   # SelectedIndexChanged löst Update-EventList aus
+    $cbLog.SelectedItem = ">> Gefunden (alle Scan-Ergebnisse)"   # SelectedIndexChanged löst Update-EventList aus
 } else {
     Update-EventList
 }
 
 # ── Sektion: Eigene Event-IDs ─────────────────────────────────
-$pnlCustom = New-SectionPanel 15 655 885 85 "➕  Eigene Event-ID hinzufügen"
+$pnlCustom = New-SectionPanel 15 655 885 85 "+  Eigene Event-ID hinzufügen"
 $formMain.Controls.Add($pnlCustom)
 
 # Event-ID
@@ -1183,7 +1183,7 @@ $txtCustomDesc.Text     = ""
 $pnlCustom.Controls.Add($txtCustomDesc)
 
 # Hinzufügen-Button
-$btnCustomAdd = New-StyledButton "➕ Hinzufügen" 630 31 120 26 $true
+$btnCustomAdd = New-StyledButton "+ Hinzufügen" 630 31 120 26 $true
 $pnlCustom.Controls.Add($btnCustomAdd)
 
 # Info-Label
@@ -1269,7 +1269,7 @@ $clbEvents.Add_SelectedIndexChanged({
 })
 
 # ── Aktions-Buttons ───────────────────────────────────────────
-$btnAbfragen = New-StyledButton "🔎  Abfragen" 700 785 200 42 $true
+$btnAbfragen = New-StyledButton "Abfragen" 700 785 200 42 $true
 $btnAbfragen.Font = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
 $formMain.Controls.Add($btnAbfragen)
 
@@ -1277,13 +1277,13 @@ $btnBeenden = New-StyledButton "Beenden" 15 785 100 42 $false
 $formMain.Controls.Add($btnBeenden)
 $btnBeenden.Add_Click({ $formMain.Close() })
 
-$btnXPath = New-StyledButton "🧪 XPath-Abfrage" 560 785 130 42 $false
+$btnXPath = New-StyledButton "XPath-Abfrage" 560 785 130 42 $false
 $formMain.Controls.Add($btnXPath)
 
 $btnXPath.Add_Click({
     # ── XPath-Dialog ──────────────────────────────────────────────
     $fxp = New-Object System.Windows.Forms.Form
-    $fxp.Text            = "🧪  XPath-Direktabfrage"
+    $fxp.Text            = "XPath-Direktabfrage"
     $fxp.Size            = New-Object System.Drawing.Size(710, 370)
     $fxp.StartPosition   = "CenterScreen"
     $fxp.FormBorderStyle = "FixedDialog"
@@ -1294,7 +1294,7 @@ $btnXPath.Add_Click({
     $pnlXH = New-Object System.Windows.Forms.Panel
     $pnlXH.Dock = "Top"; $pnlXH.Height = 48; $pnlXH.BackColor = $clrAccent
     $lblXH = New-Object System.Windows.Forms.Label
-    $lblXH.Text = "  🧪  XPath-Direktabfrage"; $lblXH.Dock = "Fill"
+    $lblXH.Text = "  XPath-Direktabfrage"; $lblXH.Dock = "Fill"
     $lblXH.Font = $fontTitle; $lblXH.ForeColor = [System.Drawing.Color]::White; $lblXH.TextAlign = "MiddleLeft"
     $pnlXH.Controls.Add($lblXH); $fxp.Controls.Add($pnlXH)
 
@@ -1339,7 +1339,7 @@ $btnXPath.Add_Click({
     $lblXEx = New-Label "z.B.: *[System[EventID=4625 and TimeCreated[timediff(@SystemTime) <= 3600000]]]" 15 258 668 18 $false $true
     $lblXEx.Font = $fontSmall; $fxp.Controls.Add($lblXEx)
 
-    $btnXRun    = New-StyledButton "🔎 Abfragen" 455 285 115 32 $true
+    $btnXRun    = New-StyledButton "Abfragen" 455 285 115 32 $true
     $btnXClose  = New-StyledButton "Abbrechen"   578 285 100 32 $false
     $lblXStat   = New-Label "" 15 292 432 22 $false $true
     $fxp.Controls.Add($btnXRun); $fxp.Controls.Add($btnXClose); $fxp.Controls.Add($lblXStat)
@@ -1355,7 +1355,7 @@ $btnXPath.Add_Click({
         if ([string]::IsNullOrWhiteSpace($xLog) -or [string]::IsNullOrWhiteSpace($xXPath)) {
             $lblXStat.ForeColor = $clrWarn; $lblXStat.Text = "⚠  Log-Name und XPath-Filter sind erforderlich."; return
         }
-        $lblXStat.ForeColor = $clrMuted; $lblXStat.Text = "⏳ Abfrage läuft..."; $fxp.Refresh()
+        $lblXStat.ForeColor = $clrMuted; $lblXStat.Text = "Abfrage läuft..."; $fxp.Refresh()
 
         try {
             $xCred = Get-FormCredential
@@ -1399,7 +1399,7 @@ $btnXPath.Add_Click({
             $pnlXT = New-Object System.Windows.Forms.Panel
             $pnlXT.Dock = "Top"; $pnlXT.Height = 56; $pnlXT.BackColor = $clrAccent
             $lblXT = New-Object System.Windows.Forms.Label
-            $lblXT.Text = "  🧪  XPath-Ergebnisse  ·  $($xSorted.Count) Einträge"
+            $lblXT.Text = "  XPath-Ergebnisse  ·  $($xSorted.Count) Einträge"
             $lblXT.Dock = "Fill"; $lblXT.Font = $fontTitle; $lblXT.ForeColor = [System.Drawing.Color]::White
             $lblXT.TextAlign = "MiddleLeft"; $pnlXT.Controls.Add($lblXT); $fxOut.Controls.Add($pnlXT)
 
@@ -1407,12 +1407,12 @@ $btnXPath.Add_Click({
             $pnlXF2.Location = New-Object System.Drawing.Point(10,64); $pnlXF2.Size = New-Object System.Drawing.Size(1115,44)
             $pnlXF2.BackColor = $clrPanel
             $pnlXF2.Add_Paint({ param($s,$e); $e.Graphics.DrawRectangle((New-Object System.Drawing.Pen($clrBorder,1)),0,0,$s.Width-1,$s.Height-1) })
-            $lblXF2 = New-Label "🔎 Filter:" 8 12 60 20 $true; $pnlXF2.Controls.Add($lblXF2)
+            $lblXF2 = New-Label "Filter:" 8 12 60 20 $true; $pnlXF2.Controls.Add($lblXF2)
             $txtXF2 = New-Object System.Windows.Forms.TextBox
             $txtXF2.Location = New-Object System.Drawing.Point(70,10); $txtXF2.Size = New-Object System.Drawing.Size(280,22)
             $txtXF2.Font = $fontNormal; $pnlXF2.Controls.Add($txtXF2)
             $lblXC2 = New-Label "" 700 12 280 20 $false $true; $pnlXF2.Controls.Add($lblXC2)
-            $btnXE2 = New-StyledButton "💾 CSV" 990 8 110 28 $false; $pnlXF2.Controls.Add($btnXE2)
+            $btnXE2 = New-StyledButton "CSV-Export" 990 8 110 28 $false; $pnlXF2.Controls.Add($btnXE2)
             $fxOut.Controls.Add($pnlXF2)
 
             # DGV
@@ -1550,7 +1550,7 @@ $btnAbfragen.Add_Click({
     $computerLabel = if ($computers.Count -eq 1) { $computers[0] } else { "$($computers.Count) Computer" }
 
     $lblStatus.ForeColor = $clrMuted
-    $lblStatus.Text      = "⏳ Abfrage läuft..."
+    $lblStatus.Text      = "Abfrage läuft..."
     $formMain.Refresh()
 
     # Events abfragen – pro Computer, gruppiert nach Log
@@ -1703,7 +1703,7 @@ $($diag -join "`n")
     $formOut.Controls.Add($pnlOutTitle)
 
     $lblOutTitle = New-Object System.Windows.Forms.Label
-    $lblOutTitle.Text      = "  📊  Event-Ergebnisse"
+    $lblOutTitle.Text      = "  Event-Ergebnisse"
     $lblOutTitle.Font      = $fontTitle
     $lblOutTitle.ForeColor = [System.Drawing.Color]::White
     $lblOutTitle.Dock      = "Fill"
@@ -1733,11 +1733,11 @@ $($diag -join "`n")
         $e.Graphics.DrawRectangle($pen, 0, 0, $s.Width-1, $s.Height-1)
     })
 
-    $lblFil = New-Label "🔎 Freitext-Filter:" 8 12 120 20 $true
+    $lblFil = New-Label "Suche:" 8 12 55 20 $true
     $pnlFilter.Controls.Add($lblFil)
 
     $txtFilter = New-Object System.Windows.Forms.TextBox
-    $txtFilter.Location    = New-Object System.Drawing.Point(130, 10)
+    $txtFilter.Location    = New-Object System.Drawing.Point(68, 10)
     $txtFilter.Size        = New-Object System.Drawing.Size(280, 22)
     $txtFilter.Font        = $fontNormal
     $txtFilter.ForeColor   = $clrMuted
@@ -1800,9 +1800,9 @@ $($diag -join "`n")
     $pnlFilter.Controls.Add($lblCount)
 
     # ── Zeile 2: Aktions-Buttons ─────────────────────────────────
-    $btnExport      = New-StyledButton "💾 CSV"       8   44 90 24 $false
-    $btnExportExcel = New-StyledButton "📊 Excel"    104  44 90 24 $false
-    $btnChart       = New-StyledButton "📈 Diagramm" 200  44 115 24 $false
+    $btnExport      = New-StyledButton "CSV-Export"   8   44 100 24 $false
+    $btnExportExcel = New-StyledButton "Excel-Export" 114  44 105 24 $false
+    $btnChart       = New-StyledButton "Diagramm"    225  44 100 24 $false
     $pnlFilter.Controls.Add($btnExport)
     $pnlFilter.Controls.Add($btnExportExcel)
     $pnlFilter.Controls.Add($btnChart)
@@ -2066,7 +2066,7 @@ $($diag -join "`n")
         $values = @($grouped | ForEach-Object { $_.Count })
 
         $fChart = New-Object System.Windows.Forms.Form
-        $fChart.Text          = "📈  Zeitreihe – Event-Häufigkeit"
+        $fChart.Text          = "Zeitreihe - Event-Häufigkeit"
         $fChart.Size          = New-Object System.Drawing.Size(950, 520)
         $fChart.StartPosition = "CenterScreen"
         $fChart.BackColor     = $clrBg
@@ -2185,12 +2185,12 @@ $($diag -join "`n")
             $script:liveDataRef = $freshResults | Sort-Object Zeit -Descending
             Update-Grid $script:liveDataRef
             $lblLiveStatus.ForeColor = $clrSuccess
-            $lblLiveStatus.Text = "⟳ Live: letzte Aktualisierung $(Get-Date -Format 'HH:mm:ss')  –  $($script:liveDataRef.Count) Einträge"
+            $lblLiveStatus.Text = "Live: letzte Aktualisierung $(Get-Date -Format 'HH:mm:ss')  –  $($script:liveDataRef.Count) Einträge"
         })
 
         $script:liveTimer.Start()
         $lblLiveStatus.ForeColor = $clrInfo
-        $lblLiveStatus.Text = "⟳ Live-Modus aktiv – Intervall: $($cbLiveInterval.SelectedItem)"
+        $lblLiveStatus.Text = "Live-Modus aktiv – Intervall: $($cbLiveInterval.SelectedItem)"
 
         $formOut.Add_FormClosed({
             $script:liveTimer.Stop()
