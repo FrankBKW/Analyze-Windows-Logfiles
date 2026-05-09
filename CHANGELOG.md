@@ -26,3 +26,4 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 - [2026-05-09 11:49:20] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-09 11:50:24] fix: Refresh-ProfileList Funktionsdefinition vor ersten Aufruf verschoben (CommandNotFoundException)
 - [2026-05-09 11:54:35] Bearbeitet: WindowsEventAnalyzer.ps1
+- [2026-05-09 11:54:58] Bearbeitet: WindowsEventAnalyzer.ps1
