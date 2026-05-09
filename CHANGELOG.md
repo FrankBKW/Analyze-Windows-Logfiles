@@ -24,3 +24,4 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 - [2026-05-09 11:02:40] docs: README - Excel-Erkennung und Export-Abschnitt aktualisiert
 - [2026-05-09 11:49:01] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-09 11:49:20] Bearbeitet: WindowsEventAnalyzer.ps1
+- [2026-05-09 11:50:24] fix: Refresh-ProfileList Funktionsdefinition vor ersten Aufruf verschoben (CommandNotFoundException)

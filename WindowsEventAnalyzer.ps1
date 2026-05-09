@@ -811,6 +811,16 @@ $lblLiveHint = New-Label "Autom. Aktualisierung der Ergebnisse" 650 113 220 18 $
 $lblLiveHint.Font = $fontSmall
 $pnlOptions.Controls.Add($lblLiveHint)
 
+function Refresh-ProfileList {
+    $current = $cbProfile.Text
+    $cbProfile.Items.Clear()
+    Get-ChildItem $script:profileDir -Filter "*.json" -ErrorAction SilentlyContinue |
+        Select-Object -ExpandProperty BaseName |
+        Sort-Object |
+        ForEach-Object { $cbProfile.Items.Add($_) | Out-Null }
+    if ($cbProfile.Items.Contains($current)) { $cbProfile.Text = $current }
+}
+
 # Profilliste initialisieren
 Refresh-ProfileList
 
@@ -962,16 +972,6 @@ function Load-Profile {
     $hitCount = ($profSet.Keys | Where-Object { $profSet[$_] }).Count
     $lblStatus.ForeColor = $clrSuccess
     $lblStatus.Text = "✔ Profil '$Name' geladen – $($hitCount) Events ausgewählt."
-}
-
-function Refresh-ProfileList {
-    $current = $cbProfile.Text
-    $cbProfile.Items.Clear()
-    Get-ChildItem $script:profileDir -Filter "*.json" -ErrorAction SilentlyContinue |
-        Select-Object -ExpandProperty BaseName |
-        Sort-Object |
-        ForEach-Object { $cbProfile.Items.Add($_) | Out-Null }
-    if ($cbProfile.Items.Contains($current)) { $cbProfile.Text = $current }
 }
 
 # ── Excel-Verfügbarkeit einmalig prüfen ───────────────────────
