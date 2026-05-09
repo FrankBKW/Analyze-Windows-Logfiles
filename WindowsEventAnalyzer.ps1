@@ -2182,10 +2182,11 @@ $($diag -join "`n")
     $btnChart.Add_Click({
         # Zeitspanne bestimmen -> Granularität Stunde oder Tag
         $useDay = $sorted.Count -gt 0 -and ($sorted[0].Zeit - $sorted[-1].Zeit).TotalHours -gt 48
-        $grouped = $sorted | Group-Object {
+        $grouped = @($sorted | Group-Object {
             if ($useDay) { $_.Zeit.ToString("dd.MM.yyyy") }
             else         { $_.Zeit.ToString("dd.MM. HH:00") }
-        }
+        })
+        [Array]::Reverse($grouped)   # aelteste links, neueste rechts
         $labels = @($grouped | ForEach-Object { $_.Name })
         $values = @($grouped | ForEach-Object { $_.Count })
 
