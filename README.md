@@ -82,7 +82,7 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 | **PowerShell** | 5.1 (vorinstalliert) oder PowerShell 7+ |
 | **Rechte** | Administrator-Rechte für vollständigen Log-Zugriff (Security-Log, etc.) |
 | **Remote-Zugriff** | WinRM muss auf den Ziel-Computern aktiv sein (`Enable-PSRemoting`) |
-| **Excel-Export** | Microsoft Excel muss installiert sein (COM-Automatisierung) |
+| **Excel-Export** | Optional – wird beim Start automatisch erkannt. Ohne Excel nur CSV-Export. |
 
 ---
 
@@ -368,7 +368,7 @@ Exportiert die Ergebnisse als formatierte `.xlsx`-Datei:
 - Zeilenfärbung nach Schweregrad (Rot / Lachs / Gelb)
 - Automatische Spaltenbreite (Nachricht-Spalte max. 80 Zeichen)
 
-> **Voraussetzung:** Microsoft Excel muss installiert sein. Das Tool nutzt COM-Automatisierung (`Excel.Application`).
+> **Automatische Erkennung:** Beim Start des Tools wird geprüft, ob Microsoft Excel installiert ist. Ist Excel nicht vorhanden, wird der Excel-Export-Button in allen Ausgabefenstern automatisch ausgeblendet – es erscheint kein Fehler. Der CSV-Export steht immer zur Verfügung.
 
 > **Datenschutz:** Exportierte Dateien können personenbezogene Daten enthalten. Zugriff schützen und nach der Auswertung sicher löschen.
 
@@ -396,7 +396,7 @@ Das Diagramm berücksichtigt **alle** abgefragten Ergebnisse (vor dem Filter). E
 | **22-ID-Limit** | `Get-WinEvent -FilterHashtable` unterstützt maximal 22 Event-IDs pro Aufruf. Das Tool teilt die Auswahl automatisch in Batches auf – `Max. Einträge` ist daher ein Limit *pro Batch*, nicht über alle IDs. |
 | **Security-Log** | Erfordert **lokale Administratorrechte** oder Mitgliedschaft in der Gruppe *Event Log Readers*. |
 | **Remote WinRM** | Muss auf Ziel-Computern aktiviert sein. Firewall-Ausnahmen für Port 5985 (HTTP) oder 5986 (HTTPS) notwendig. |
-| **Excel nicht vorhanden** | Ohne installiertes Excel steht nur CSV-Export zur Verfügung. |
+| **Excel nicht vorhanden** | Excel-Export-Button wird automatisch ausgeblendet. CSV-Export steht immer zur Verfügung. |
 | **Diagramm-Assembly** | Fehlt `System.Windows.Forms.DataVisualization`, öffnet sich das Diagramm-Fenster mit einer Fehlermeldung. |
 | **Scan-Sample-Größe** | Der Schnell-Scan liest nur 15 Events pro Log. IDs, die in keinem der letzten 15 Einträge eines Logs vorkommen, werden erst beim Manifest-Scan erkannt. |
 | **Nachrichtentexte im Scan** | Der Startup-Scan zeigt keine Klartextnachrichten in der Erkannt-Liste (nur Provider-Name), da der Message-Lookup aus Performancegründen deaktiviert ist. Im Abfrage-Ergebnis erscheinen die vollständigen Nachrichten wie gewohnt. |

@@ -974,6 +974,15 @@ function Refresh-ProfileList {
     if ($cbProfile.Items.Contains($current)) { $cbProfile.Text = $current }
 }
 
+# ── Excel-Verfügbarkeit einmalig prüfen ───────────────────────
+$script:excelAvailable = $false
+try {
+    $testXls = New-Object -ComObject Excel.Application -ErrorAction Stop
+    $testXls.Quit()
+    [System.Runtime.InteropServices.Marshal]::ReleaseComObject($testXls) | Out-Null
+    $script:excelAvailable = $true
+} catch { $script:excelAvailable = $false }
+
 # ── Live-Timer (Skript-Scope für FormOut-Zugriff) ─────────────
 $script:liveTimer    = New-Object System.Windows.Forms.Timer
 $script:liveTimer.Interval = 60000   # Default 1 Minute
@@ -1578,7 +1587,11 @@ $btnXPath.Add_Click({
             $btnXExcel   = New-StyledButton "Excel-Export" 126 44 115 24 $false
             $btnXChart   = New-StyledButton "Diagramm"     249 44 100 24 $false
             $pnlXF2.Controls.Add($btnXE2)
-            $pnlXF2.Controls.Add($btnXExcel)
+            if ($script:excelAvailable) {
+                $pnlXF2.Controls.Add($btnXExcel)
+            } else {
+                $btnXChart.Location = New-Object System.Drawing.Point(126, 44)
+            }
             $pnlXF2.Controls.Add($btnXChart)
             $fxOut.Controls.Add($pnlXF2)
 
@@ -2101,7 +2114,11 @@ $($diag -join "`n")
     $btnExportExcel = New-StyledButton "Excel-Export" 114  44 105 24 $false
     $btnChart       = New-StyledButton "Diagramm"    225  44 100 24 $false
     $pnlFilter.Controls.Add($btnExport)
-    $pnlFilter.Controls.Add($btnExportExcel)
+    if ($script:excelAvailable) {
+        $pnlFilter.Controls.Add($btnExportExcel)
+    } else {
+        $btnChart.Location = New-Object System.Drawing.Point(114, 44)
+    }
     $pnlFilter.Controls.Add($btnChart)
 
     # ── DataGridView ──────────────────────────────────────────

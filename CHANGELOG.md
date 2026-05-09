@@ -20,3 +20,5 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 - [2026-05-09 11:01:31] Bearbeitet: README.md
 - [2026-05-09 11:01:50] Bearbeitet: README.md
 - [2026-05-09 11:02:07] Bearbeitet: README.md
+- [2026-05-09 11:02:40] feat: Excel-Export wird beim Start erkannt - Button in beiden Fenstern ausgeblendet wenn Excel fehlt
+- [2026-05-09 11:02:40] docs: README - Excel-Erkennung und Export-Abschnitt aktualisiert
