@@ -36,3 +36,4 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 - [2026-05-09 16:32:50] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-09 16:33:05] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-09 16:33:28] Bearbeitet: WindowsEventAnalyzer.ps1
+- [2026-05-09 16:34:29] feat: XPath-Ergebnis zeigt Kategorie und Beschreibung aus Event-Katalog (Lookup bei bekannten IDs)

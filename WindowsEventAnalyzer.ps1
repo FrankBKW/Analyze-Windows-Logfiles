@@ -1548,12 +1548,15 @@ $btnXPath.Add_Click({
                     "Information" { "Information" } "Informationen" { "Information" }
                     default { "$($r.LevelDisplayName)" }
                 }
+                # Katalog-Lookup: Kategorie + Beschreibung aus kuratierter Liste
+                $meta = $eventCatalog | Where-Object { $_.ID -eq $r.Id -and $_.Log -eq $xLog } | Select-Object -First 1
                 [PSCustomObject]@{
                     Computer  = $xComp
                     Zeit      = $r.TimeCreated; Typ = $typ
                     Protokoll = Get-LogShortLabel $xLog; LogVoll = $xLog
                     EventID   = $r.Id; Quelle = $r.ProviderName
-                    Kategorie = "XPath"; Beschr = $xXPath.Substring(0,[Math]::Min(60,$xXPath.Length))
+                    Kategorie = if ($meta) { $meta.Category } else { "-" }
+                    Beschr    = if ($meta) { $meta.Desc }     else { "-" }
                     Nachricht = $short
                 }
             } | Sort-Object Zeit -Descending)
@@ -1621,7 +1624,8 @@ $btnXPath.Add_Click({
 
             foreach ($xColDef in @(
                 @{N="Computer";W=100},@{N="Zeit";W=135},@{N="Typ";W=80},
-                @{N="Protokoll";W=85},@{N="EventID";W=65},@{N="Quelle";W=160},@{N="Nachricht";Fill=$true}
+                @{N="Protokoll";W=85},@{N="EventID";W=65},@{N="Kategorie";W=90},
+                @{N="Quelle";W=140},@{N="Beschreibung";W=175},@{N="Nachricht";Fill=$true}
             )) {
                 $xc = New-Object System.Windows.Forms.DataGridViewTextBoxColumn
                 $xc.Name = $xColDef.N; $xc.HeaderText = $xColDef.N; $xc.SortMode = "Automatic"
@@ -1642,7 +1646,7 @@ $btnXPath.Add_Click({
             $script:xSortedRef = $xSorted
             foreach ($r in $xSorted) {
                 $xdgv.Rows.Add($r.Computer, $r.Zeit.ToString("dd.MM.yyyy HH:mm:ss"), $r.Typ,
-                    $r.Protokoll, $r.EventID, $r.Quelle, $r.Nachricht) | Out-Null
+                    $r.Protokoll, $r.EventID, $r.Kategorie, $r.Quelle, $r.Beschr, $r.Nachricht) | Out-Null
             }
             $lblXC2.Text = "Einträge: $($xSorted.Count)"
 
@@ -1654,7 +1658,7 @@ $btnXPath.Add_Click({
                 }
                 foreach ($r in $xFil) {
                     $xdgv.Rows.Add($r.Computer, $r.Zeit.ToString("dd.MM.yyyy HH:mm:ss"), $r.Typ,
-                        $r.Protokoll, $r.EventID, $r.Quelle, $r.Nachricht) | Out-Null
+                        $r.Protokoll, $r.EventID, $r.Kategorie, $r.Quelle, $r.Beschr, $r.Nachricht) | Out-Null
                 }
                 $lblXC2.Text = "Einträge: $($xFil.Count) / $($script:xSortedRef.Count)"
             })
@@ -1723,7 +1727,7 @@ $btnXPath.Add_Click({
                     $xls.Visible = $false; $xls.DisplayAlerts = $false
                     $wb  = $xls.Workbooks.Add()
                     $ws  = $wb.Worksheets.Item(1); $ws.Name = "XPath-Events"
-                    $headers = @("Computer","Zeit","Typ","Protokoll","EventID","Quelle","Nachricht")
+                    $headers = @("Computer","Zeit","Typ","Protokoll","EventID","Kategorie","Quelle","Beschreibung","Nachricht")
                     for ($hc = 0; $hc -lt $headers.Count; $hc++) {
                         $ws.Cells.Item(1, $hc+1) = $headers[$hc]
                         $ws.Cells.Item(1, $hc+1).Font.Bold = $true
@@ -1735,8 +1739,10 @@ $btnXPath.Add_Click({
                         $ws.Cells.Item($row,3) = $r.Typ
                         $ws.Cells.Item($row,4) = $r.Protokoll
                         $ws.Cells.Item($row,5) = $r.EventID
-                        $ws.Cells.Item($row,6) = $r.Quelle
-                        $ws.Cells.Item($row,7) = $r.Nachricht
+                        $ws.Cells.Item($row,6) = $r.Kategorie
+                        $ws.Cells.Item($row,7) = $r.Quelle
+                        $ws.Cells.Item($row,8) = $r.Beschr
+                        $ws.Cells.Item($row,9) = $r.Nachricht
                         $row++
                     }
                     $ws.Columns.AutoFit() | Out-Null
