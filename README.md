@@ -420,6 +420,7 @@ Das Diagramm berücksichtigt **alle** abgefragten Ergebnisse (vor dem Filter). E
 | **Excel nicht vorhanden** | Excel-Export-Button wird automatisch ausgeblendet. CSV-Export steht immer zur Verfügung. |
 | **Diagramm-Assembly** | Fehlt `System.Windows.Forms.DataVisualization`, öffnet sich das Diagramm-Fenster mit einer Fehlermeldung. |
 | **Scan-Sample-Größe** | Der Schnell-Scan liest nur 15 Events pro Log. IDs, die in keinem der letzten 15 Einträge eines Logs vorkommen, werden erst beim Manifest-Scan erkannt. |
+| **Scan ohne WinRM (lokal)** | Der Scan erkennt automatisch ob der Ziel-Computer lokal ist und verzichtet dann auf `-ComputerName` (WinRM). Dadurch funktioniert der Scan auch ohne aktiviertes WinRM auf dem lokalen Rechner. |
 | **Nachrichtentexte im Scan** | Der Startup-Scan zeigt keine Klartextnachrichten in der Erkannt-Liste (nur Provider-Name), da der Message-Lookup aus Performancegründen deaktiviert ist. Im Abfrage-Ergebnis erscheinen die vollständigen Nachrichten wie gewohnt. |
 | **Startup-Scan optional** | Beim Start wird per Dialog gefragt, ob der lokale Computer gescannt werden soll. Bei Auswahl „Nein" enthält die Ereignisliste nur den Standard-Katalog – kein Eintrag unter „◈ Erkannt auf Computer". Scan jederzeit manuell nachholbar. |
 
