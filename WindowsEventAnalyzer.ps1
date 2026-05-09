@@ -355,6 +355,13 @@ function New-ProgressForm {
     }
 }
 
+function Test-IsLocalComputer {
+    param([string]$Computer)
+    $localNames = @('localhost', '127.0.0.1', '.', '', $env:COMPUTERNAME)
+    return $localNames -contains $Computer.Trim().ToUpper() -or
+           $Computer.Trim().ToUpper() -eq $env:COMPUTERNAME.ToUpper()
+}
+
 function Invoke-ComputerEventScan {
     param(
         [string]$Computer,
@@ -367,26 +374,36 @@ function Invoke-ComputerEventScan {
     $found = [System.Collections.Generic.List[PSObject]]::new()
     $script:scanCancelled = $false
 
+    # Lokal vs. Remote: lokale Abfragen NICHT über WinRM (ComputerName) leiten –
+    # das schlägt fehl wenn WinRM deaktiviert ist.
+    $isLocal = Test-IsLocalComputer $Computer
+
     # Schritt 1: Alle Logs ermitteln (nur Metadaten – sehr schnell)
     $ProgressUI.LblMain.Text = "Logs werden aufgelistet..."
-    $ProgressUI.LblSub.Text  = "Get-WinEvent -ListLog *"
+    $ProgressUI.LblSub.Text  = if ($isLocal) { "Lokaler Zugriff" } else { "Remote: $Computer" }
     [System.Windows.Forms.Application]::DoEvents()
 
     try {
-        $listParams = @{ ListLog = '*'; ComputerName = $Computer; ErrorAction = 'Stop' }
-        if ($Credential) { $listParams.Credential = $Credential }
-        # Nur aktive Logs, absteigend nach RecordCount, auf MaxLogs begrenzen
+        $listParams = @{ ListLog = '*'; ErrorAction = 'Stop' }
+        if (-not $isLocal) { $listParams.ComputerName = $Computer }
+        if ($Credential -and -not $isLocal) { $listParams.Credential = $Credential }
+
+        # RecordCount kann bei Remote-Abfragen $null sein → null-sicherer Vergleich
         $allLogs = Get-WinEvent @listParams |
-                   Where-Object { $_.RecordCount -gt 0 -and $_.IsEnabled } |
-                   Sort-Object RecordCount -Descending |
+                   Where-Object { $_.IsEnabled -and ($_.RecordCount -eq $null -or $_.RecordCount -gt 0) } |
+                   Sort-Object { if ($_.RecordCount) { $_.RecordCount } else { 0 } } -Descending |
                    Select-Object -First $MaxLogs
     } catch {
-        $ProgressUI.LblMain.Text = "Fehler: $($_.Exception.Message)"
+        $ProgressUI.LblMain.Text = "Fehler beim Auflisten der Logs: $($_.Exception.Message)"
         Start-Sleep -Seconds 2
         return $null
     }
 
-    if (-not $allLogs -or $allLogs.Count -eq 0) { return $found }
+    if (-not $allLogs -or $allLogs.Count -eq 0) {
+        $ProgressUI.LblMain.Text = "Keine aktiven Logs gefunden."
+        Start-Sleep -Seconds 1
+        return $found
+    }
 
     # Schritt 2: Pro Log kleines Sample lesen – nur zur ID-Erkennung
     # WICHTIG: $event.Message NICHT verwenden – löst teure DLL-Formatierung aus!
@@ -397,17 +414,18 @@ function Invoke-ComputerEventScan {
         $i++
         $ProgressUI.Bar.Value    = $i
         $ProgressUI.LblMain.Text = "Scanne Log $i / $($allLogs.Count): $($log.LogName)"
-        $ProgressUI.LblSub.Text  = "$($log.RecordCount) Einträge · lese $MaxPerLog Events..."
+        $recordInfo = if ($log.RecordCount -ne $null) { "$($log.RecordCount) Einträge" } else { "Einträge unbekannt" }
+        $ProgressUI.LblSub.Text  = "$recordInfo · lese $MaxPerLog Events..."
         [System.Windows.Forms.Application]::DoEvents()
 
         try {
             $sampleParams = @{
-                LogName      = $log.LogName
-                MaxEvents    = $MaxPerLog
-                ComputerName = $Computer
-                ErrorAction  = 'Stop'
+                LogName   = $log.LogName
+                MaxEvents = $MaxPerLog
+                ErrorAction = 'Stop'
             }
-            if ($Credential) { $sampleParams.Credential = $Credential }
+            if (-not $isLocal) { $sampleParams.ComputerName = $Computer }
+            if ($Credential -and -not $isLocal) { $sampleParams.Credential = $Credential }
             $sample = Get-WinEvent @sampleParams
 
             # Nach ID + Provider gruppieren – kein .Message-Zugriff (wäre langsam)
@@ -461,13 +479,16 @@ function Invoke-DocumentedIDsScan {
     $LogNames = @($LogNames | Where-Object { $_ -ne "Security" })
     if ($LogNames.Count -eq 0) { return $found }
 
+    $isLocal = Test-IsLocalComputer $Computer
+
     # 1) Provider sammeln, die in diese Logs schreiben
     $providers = New-Object System.Collections.Generic.HashSet[string]
     foreach ($logName in $LogNames) {
         if ($script:scanCancelled) { return $found }
         try {
-            $logInfoParams = @{ ListLog = $logName; ComputerName = $Computer; ErrorAction = 'Stop' }
-            if ($Credential) { $logInfoParams.Credential = $Credential }
+            $logInfoParams = @{ ListLog = $logName; ErrorAction = 'Stop' }
+            if (-not $isLocal) { $logInfoParams.ComputerName = $Computer }
+            if ($Credential -and -not $isLocal) { $logInfoParams.Credential = $Credential }
             $logInfo = Get-WinEvent @logInfoParams
             foreach ($p in $logInfo.ProviderNames) {
                 [void]$providers.Add($p)
@@ -494,8 +515,9 @@ function Invoke-DocumentedIDsScan {
         [System.Windows.Forms.Application]::DoEvents()
 
         try {
-            $provParams = @{ ListProvider = $provName; ComputerName = $Computer; ErrorAction = 'Stop' }
-            if ($Credential) { $provParams.Credential = $Credential }
+            $provParams = @{ ListProvider = $provName; ErrorAction = 'Stop' }
+            if (-not $isLocal) { $provParams.ComputerName = $Computer }
+            if ($Credential -and -not $isLocal) { $provParams.Credential = $Credential }
             $prov = Get-WinEvent @provParams
             foreach ($evt in $prov.Events) {
                 # Zu welchem Log gehört dieses Event?
@@ -668,6 +690,8 @@ if ($dlgScan -eq [System.Windows.Forms.DialogResult]::Yes) {
 
         if ($script:scanCancelled) {
             $script:startupScanResult = "Scan vom Benutzer abgebrochen."
+        } elseif ($addedCount -eq 0) {
+            $script:startupScanResult = "⚠  Scan: Keine IDs gefunden. Ggf. als Administrator starten oder 'Scan'-Button erneut verwenden."
         } else {
             $script:startupScanResult = "Schnell-Scan: $addedCount IDs aus $logsCount Logs erkannt. Für Manifest-Scan: 'Scan + Manifest' nutzen."
         }
@@ -675,7 +699,7 @@ if ($dlgScan -eq [System.Windows.Forms.DialogResult]::Yes) {
         if ($progUI -and $progUI.Form) {
             try { $progUI.Form.Close(); $progUI.Form.Dispose() } catch {}
         }
-        $script:startupScanResult = "Scan fehlgeschlagen: $($_.Exception.Message)"
+        $script:startupScanResult = "⚠  Scan fehlgeschlagen: $($_.Exception.Message)"
     }
 } else {
     $script:startupScanResult = "Startup-Scan übersprungen. Scan jederzeit über den 'Scan'-Button starten."
