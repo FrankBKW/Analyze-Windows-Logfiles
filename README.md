@@ -4,6 +4,56 @@ Interaktives PowerShell-GUI-Tool zum Abfragen, Filtern und Auswerten von Windows
 
 ---
 
+## ⚠️ Disclaimer / Rechtlicher Hinweis
+
+> **Bitte vollständig lesen, bevor das Tool eingesetzt wird.**
+
+### Nutzungszweck und Zielgruppe
+
+Dieses Tool ist ausschließlich für den **legitimen, autorisierten Einsatz** durch IT-Administratoren, System-Engineers und Sicherheitsverantwortliche bestimmt, die zur Analyse der betroffenen Systeme **ausdrücklich berechtigt** sind. Jede andere Verwendung ist unzulässig.
+
+### Zugriff auf fremde Systeme
+
+Das Auslesen von Ereignisprotokollen eines fremden Computers ist in den meisten Ländern **strafbar**, wenn es ohne ausdrückliche Genehmigung des Systemeigentümers oder zuständigen IT-Verantwortlichen erfolgt.
+
+- **Nur autorisierte Systeme abfragen.** Die Eingabe von Hostnamen oder Credentials, für die keine Berechtigung vorliegt, kann den Tatbestand des unbefugten Zugriffs auf ein Computersystem erfüllen (z.B. § 202a StGB in Deutschland, Art. 143 StGB in der Schweiz, § 118a öStGB in Österreich sowie die EU-Richtlinie 2013/40/EU und den Computer Fraud and Abuse Act in den USA).
+- **Remote-Credentials sicher behandeln.** Eingegebene Passwörter werden im Arbeitsspeicher als `SecureString` verwaltet und nicht dauerhaft gespeichert. Dennoch liegt die Verantwortung für den sicheren Umgang mit Zugangsdaten beim Anwender.
+- **Netzwerk-Policies beachten.** Der Einsatz in Unternehmensumgebungen muss mit den internen Sicherheitsrichtlinien und – sofern zutreffend – dem Betriebsrat oder der Personalvertretung abgestimmt sein.
+
+### Datenschutz und personenbezogene Daten
+
+Windows-Ereignisprotokolle können **personenbezogene Daten** enthalten, darunter:
+- Benutzernamen, Anmeldezeiten und Arbeitsplatznamen
+- IP-Adressen und Computernamen
+- Datei- und Ressourcenzugriffe
+- Prozessstart- und Anwendungsdaten
+
+Der Umgang mit diesen Daten unterliegt der **Datenschutz-Grundverordnung (DSGVO / GDPR)** sowie den einschlägigen nationalen Datenschutzgesetzen. Exportierte Dateien (CSV, Excel) sind entsprechend zu schützen, zu kennzeichnen und nach Ablauf der gesetzlichen Aufbewahrungsfrist zu löschen.
+
+### Ausführung als Administrator
+
+Das Tool erfordert zur vollständigen Funktion lokale Administratorrechte. Die erhöhten Rechte sind **ausschließlich für den vorgesehenen Analysezweck** zu verwenden. Das Script ist vor der Ausführung auf die eigene Umgebung hin zu prüfen. Der Betreiber trägt die Verantwortung für den Einsatz auf seinen Systemen.
+
+### Haftungsausschluss
+
+- Dieses Tool wird **ohne jede Gewährleistung** bereitgestellt – weder ausdrücklich noch stillschweigend.
+- Der Autor übernimmt **keine Haftung** für Schäden, die durch die Nutzung, Fehlnutzung oder den Ausfall des Tools entstehen, einschließlich Datenverlust, Systemausfälle oder Sicherheitsvorfälle.
+- Die **Richtigkeit und Vollständigkeit** der angezeigten Ereignisdaten hängt von den Konfigurationen des Zielsystems ab. Das Tool trifft keine Aussagen über die Integrität der Protokolldaten.
+- Der Einsatz in **Produktivumgebungen** erfolgt auf eigene Verantwortung. Es wird empfohlen, das Tool zunächst in einer Testumgebung zu erproben.
+
+### Sicherheitshinweise zur Ausführungsrichtlinie
+
+Der Start mit `-ExecutionPolicy Bypass` deaktiviert die PowerShell-Skriptausführungsrichtlinie für diesen Prozess. Dies ist ein bekanntes Sicherheitsrisiko. Empfehlung für den Produktiveinsatz:
+```powershell
+# Skript einmalig signieren (Code Signing Certificate erforderlich):
+Set-AuthenticodeSignature -FilePath "WindowsEventAnalyzer.ps1" -Certificate $cert
+
+# Oder Execution Policy nur auf den eigenen Benutzer anpassen:
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
+---
+
 ## Inhaltsverzeichnis
 
 1. [Voraussetzungen](#voraussetzungen)
@@ -53,7 +103,7 @@ Interaktives PowerShell-GUI-Tool zum Abfragen, Filtern und Auswerten von Windows
    & "C:\Pfad\zum\WindowsEventAnalyzer.ps1"
    ```
 
-3. Beim Start wird automatisch ein **Computer-Scan** durchgeführt: Alle aktiven Event-Logs des lokalen Computers werden eingelesen und der Katalog um erkannte Event-IDs ergänzt. Dieser Vorgang dauert je nach System 10–60 Sekunden und kann mit **Überspringen** abgebrochen werden.
+3. Beim Start wird automatisch ein **Schnell-Scan** durchgeführt: Die aktivsten Event-Logs des lokalen Computers werden in wenigen Sekunden eingelesen und der Katalog um erkannte Event-IDs ergänzt. Der Vorgang kann jederzeit mit **Überspringen** abgebrochen werden.
 
 ---
 
@@ -63,7 +113,7 @@ Interaktives PowerShell-GUI-Tool zum Abfragen, Filtern und Auswerten von Windows
 ┌─────────────────────────────────────────────────────────────────────┐
 │  🔍  Windows Event Abfrage-Tool                                     │ ← Titelleiste
 ├─────────────────────────────────────────────────────────────────────┤
-│  ⚙ Abfrage-Optionen   [Zeitraum] [Max] [Computer] [🔄 Scan]        │
+│  ⚙ Abfrage-Optionen   [Zeitraum] [Max] [Computer] [🔄 Scan] [□Manifest]  │
 │                        [Domain] [Benutzer] [Passwort]               │ ← Optionen
 │                        [📋 Profil] [📂 Laden] [💾 Speichern]       │
 │                        [⟳ Live-Modus] [Intervall]                  │
@@ -103,7 +153,7 @@ Begrenzt die Anzahl der zurückgelieferten Ereignisse **pro Log-Abfrage**:
 `25 / 50 / 100 / 250 / 500`
 
 ### Computer
-Gibt an, welcher Computer abgefragt wird. Leer lassen = lokaler Computer.
+Gibt an, welcher Computer abgefragt wird. Leer lassen = lokaler Computer. Mehrere Hosts kommagetrennt eingeben.
 
 ---
 
@@ -115,7 +165,7 @@ Um Ereignisprotokolle eines anderen Computers auszulesen, müssen in der Regel A
 |---|---|
 | **Domain** | Active-Directory-Domäne (z.B. `FIRMA`). Leer lassen für lokale Konten. |
 | **Benutzer** | Benutzername (z.B. `Administrator`) |
-| **Passwort** | Wird beim Aufruf als `SecureString` behandelt und nicht gespeichert. |
+| **Passwort** | Wird als `SecureString` behandelt und **nicht** dauerhaft gespeichert. |
 
 > Sind alle drei Felder leer, wird die **aktuelle Windows-Anmeldung** verwendet (Kerberos / Pass-Through-Auth).
 
@@ -131,7 +181,7 @@ PC-EMPFANG, PC-BUCHHALTUNG, SRV-FILESERVER01
 
 - Die Abfrage wird für **jeden Computer separat** ausgeführt.
 - Im Ergebnis-Fenster erscheint eine zusätzliche Spalte **Computer** sowie ein Filter-Dropdown zum Einschränken auf einen einzelnen Host.
-- Die angegebenen Credentials (Domain/Benutzer/Passwort) gelten für alle Computer gleichermaßen.
+- Die angegebenen Credentials gelten für alle Computer gleichermaßen.
 
 > **Voraussetzung Remote:** WinRM muss auf den Zielcomputern aktiv sein:
 > ```powershell
@@ -196,7 +246,7 @@ Schränkt die Anzeige auf eine Log-Gruppe ein:
 | 🔍 Gefunden (alle Scan-Ergebnisse) | Alle beim Startup-Scan erkannten IDs |
 | ★ Empfohlen (kuratiert) | Vordefinierter Katalog mit 120+ wichtigen IDs |
 | ◈ Erkannt auf Computer | Nur IDs, die tatsächlich im Sample vorkamen |
-| 📚 Dokumentiert (Manifest) | IDs aus Provider-Manifesten |
+| 📚 Dokumentiert (Manifest) | IDs aus Provider-Manifesten (nach Manifest-Scan) |
 | System / Security / Application / … | Einzelne Log-Gruppen |
 
 ### Mehrfachauswahl
@@ -208,7 +258,12 @@ Schränkt die Anzeige auf eine Log-Gruppe ein:
 Ein Klick auf einen Listeneintrag zeigt unten die vollständige Beschreibung der Event-ID an.
 
 ### Scan-Aktualisierung (🔄 Scan)
-Der **🔄 Scan**-Button fragt den im Computer-Feld eingetragenen Host erneut ab und ergänzt den Katalog um dort gefundene Event-IDs. Nützlich, wenn der Remote-Computer zuerst nicht erreichbar war.
+Der **🔄 Scan**-Button scannt den Ziel-Computer erneut und ergänzt den Katalog.
+
+| Option | Verhalten |
+|---|---|
+| Checkbox **„Manifest"** nicht aktiv *(Standard)* | Schnell-Scan: nur aktiv aufgetretene IDs (5–15 Sek.) |
+| Checkbox **„Manifest"** aktiv | Vollständiger Scan inkl. Provider-Manifesten – liefert auch nie aufgetretene dokumentierte IDs (kann mehrere Minuten dauern) |
 
 ---
 
@@ -315,6 +370,8 @@ Exportiert die Ergebnisse als formatierte `.xlsx`-Datei:
 
 > **Voraussetzung:** Microsoft Excel muss installiert sein. Das Tool nutzt COM-Automatisierung (`Excel.Application`).
 
+> **Datenschutz:** Exportierte Dateien können personenbezogene Daten enthalten. Zugriff schützen und nach der Auswertung sicher löschen.
+
 ---
 
 ## Zeitreihe-Diagramm
@@ -336,12 +393,13 @@ Das Diagramm berücksichtigt **alle** abgefragten Ergebnisse (vor dem Filter). E
 
 | Thema | Details |
 |---|---|
-| **22-ID-Limit** | `Get-WinEvent -FilterHashtable` unterstützt maximal 22 Event-IDs pro Aufruf. Das Tool teilt die Auswahl automatisch in Batches auf – dadurch ist `Max. Einträge` ein Limit *pro Batch*, nicht über alle IDs. |
+| **22-ID-Limit** | `Get-WinEvent -FilterHashtable` unterstützt maximal 22 Event-IDs pro Aufruf. Das Tool teilt die Auswahl automatisch in Batches auf – `Max. Einträge` ist daher ein Limit *pro Batch*, nicht über alle IDs. |
 | **Security-Log** | Erfordert **lokale Administratorrechte** oder Mitgliedschaft in der Gruppe *Event Log Readers*. |
 | **Remote WinRM** | Muss auf Ziel-Computern aktiviert sein. Firewall-Ausnahmen für Port 5985 (HTTP) oder 5986 (HTTPS) notwendig. |
 | **Excel nicht vorhanden** | Ohne installiertes Excel steht nur CSV-Export zur Verfügung. |
 | **Diagramm-Assembly** | Fehlt `System.Windows.Forms.DataVisualization`, öffnet sich das Diagramm-Fenster mit einer Fehlermeldung. |
-| **Startup-Scan** | Auf Systemen mit sehr vielen Logs (> 300) kann der initiale Scan mehrere Minuten dauern. Abbrechen mit **Überspringen** ist jederzeit möglich. |
+| **Scan-Sample-Größe** | Der Schnell-Scan liest nur 15 Events pro Log. IDs, die in keinem der letzten 15 Einträge eines Logs vorkommen, werden erst beim Manifest-Scan erkannt. |
+| **Nachrichtentexte im Scan** | Der Startup-Scan zeigt keine Klartextnachrichten in der Erkannt-Liste (nur Provider-Name), da der Message-Lookup aus Performancegründen deaktiviert ist. Im Abfrage-Ergebnis erscheinen die vollständigen Nachrichten wie gewohnt. |
 
 ---
 
@@ -385,10 +443,10 @@ Beispielinhalt einer Profil-Datei:
 1. Computer → `SRV01, SRV02, SRV03`
 2. Domain / Benutzer / Passwort ausfüllen
 3. Bereich → `Windows Defender`
-4. Kategorie → `Kritisch` – nur kritische Meldungen anzeigen
+4. Kategorie → `Kritisch`
 5. Zeitraum → `Letzte 7 Tage`
 6. **🔎 Abfragen** → im Ergebnis über **Computer**-Filter je Server filtern
 
 ---
 
-*Erstellt mit PowerShell WinForms · Kein externes Modul erforderlich (außer Excel für xlsx-Export)*
+*Erstellt mit PowerShell WinForms · Kein externes Modul erforderlich (außer Microsoft Excel für xlsx-Export)*
