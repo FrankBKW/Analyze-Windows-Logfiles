@@ -103,7 +103,9 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
    & "C:\Pfad\zum\WindowsEventAnalyzer.ps1"
    ```
 
-3. Beim Start wird automatisch ein **Schnell-Scan** durchgeführt: Die aktivsten Event-Logs des lokalen Computers werden in wenigen Sekunden eingelesen und der Katalog um erkannte Event-IDs ergänzt. Der Vorgang kann jederzeit mit **Überspringen** abgebrochen werden.
+3. Beim Start erscheint eine **Abfrage**, ob der lokale Computer gescannt werden soll:
+   - **Ja** → Schnell-Scan läuft automatisch: Die aktivsten Event-Logs werden in wenigen Sekunden eingelesen und der Katalog um erkannte Event-IDs ergänzt. Der Vorgang kann jederzeit mit **Überspringen** abgebrochen werden.
+   - **Nein** → Das Programm öffnet sofort ohne Scan. Ein Scan kann jederzeit manuell über den **🔄 Scan**-Button gestartet werden.
 
 ---
 
@@ -291,10 +293,12 @@ Für Experten: vollständig freier Filter über die XPath-Syntax der Windows-Ere
 
 | Feld | Beschreibung |
 |---|---|
-| **Log-Name** | Name des Ereignisprotokolls (Dropdown + frei editierbar) |
-| **Computer** | Ziel-Computer (vorbelegt aus dem Hauptformular) |
-| **Max. Einträge** | Begrenzung der Ergebnismenge |
-| **XPath-Filter** | Beliebiger XPath-Ausdruck |
+| **Log-Name** | Name des Ereignisprotokolls (Dropdown + frei editierbar) – wird automatisch aus dem Bereichs-Filter des Hauptfensters vorbelegt (z.B. „Security" → `Security`, „PowerShell" → `Microsoft-Windows-PowerShell/Operational`) |
+| **Computer** | Ziel-Computer – vorbelegt aus dem Hauptformular |
+| **Max. Einträge** | Begrenzung der Ergebnismenge – vorbelegt aus dem Hauptformular |
+| **XPath-Filter** | Beliebiger XPath-Ausdruck – wird automatisch mit dem gewählten Zeitraum aus dem Hauptfenster vorbelegt |
+
+> **Automatische Voreinstellung:** Beim Öffnen des XPath-Dialogs werden Log-Name, Computer, Max. Einträge und der Zeitraum-Ausdruck im XPath-Filter direkt aus den aktuellen Einstellungen des Hauptfensters übernommen. Alle Felder bleiben manuell anpassbar.
 
 ### Beispiele
 
@@ -400,6 +404,7 @@ Das Diagramm berücksichtigt **alle** abgefragten Ergebnisse (vor dem Filter). E
 | **Diagramm-Assembly** | Fehlt `System.Windows.Forms.DataVisualization`, öffnet sich das Diagramm-Fenster mit einer Fehlermeldung. |
 | **Scan-Sample-Größe** | Der Schnell-Scan liest nur 15 Events pro Log. IDs, die in keinem der letzten 15 Einträge eines Logs vorkommen, werden erst beim Manifest-Scan erkannt. |
 | **Nachrichtentexte im Scan** | Der Startup-Scan zeigt keine Klartextnachrichten in der Erkannt-Liste (nur Provider-Name), da der Message-Lookup aus Performancegründen deaktiviert ist. Im Abfrage-Ergebnis erscheinen die vollständigen Nachrichten wie gewohnt. |
+| **Startup-Scan optional** | Beim Start wird per Dialog gefragt, ob der lokale Computer gescannt werden soll. Bei Auswahl „Nein" enthält die Ereignisliste nur den Standard-Katalog – kein Eintrag unter „◈ Erkannt auf Computer". Scan jederzeit manuell nachholbar. |
 
 ---
 
