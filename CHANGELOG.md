@@ -28,3 +28,4 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 - [2026-05-09 11:54:35] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-09 11:54:58] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-09 11:55:50] fix: Manifest-Scan - Security/System/Application von Provider-Enumeration ausgeschlossen (Fehler + Timeout)
+- [2026-05-09 12:22:11] Bearbeitet: WindowsEventAnalyzer.ps1
