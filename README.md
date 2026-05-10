@@ -281,6 +281,27 @@ Abfrage läuft... PC-EXAMPLE  ·  Security  (2 / 5)
 - Der Balken zeigt den Fortschritt pro Computer × Log-Gruppe.
 - Nach Abschluss verschwindet der Balken automatisch.
 
+### Remote-Test (🔌 Remote-Test Button)
+
+Der **Remote-Test**-Button (untere Leiste) prüft Schritt für Schritt warum ein Remote-Zugriff scheitert:
+
+| Schritt | Was wird geprüft |
+|---|---|
+| 1) Ping | Netzwerk-Erreichbarkeit des Ziel-Computers |
+| 2) Port 135 | RPC/DCOM-Port (benötigt für `Get-WinEvent`, **nicht** WinRM) |
+| 3) Get-WinEvent | Direkter Zugriffstest mit exakter Fehlermeldung |
+| 4) RemoteRegistry | Dienststatus auf dem Ziel |
+| 5) Workgroup-UAC | Hinweis auf `LocalAccountTokenFilterPolicy` |
+
+**Häufige Ursachen und Fixes:**
+
+| Fehler | Fix auf Ziel-PC (als Admin) |
+|---|---|
+| Port 135 blockiert | `Enable-NetFirewallRule -Name "RemoteEventLogSvc-In-TCP","RemoteEventLogSvc-NP-In-TCP","RemoteEventLogSvc-RPCSS-In-TCP"` |
+| Zugriff verweigert (Workgroup) | `reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v LocalAccountTokenFilterPolicy /t REG_DWORD /d 1 /f` → Neustart |
+| Zugriff verweigert (Rechte) | Benutzer zur Gruppe *Event Log Readers* hinzufügen |
+| RemoteRegistry gestoppt | `Get-Service RemoteRegistry \| Start-Service` |
+
 ### Scan-Diagnose bei Problemen
 
 Findet der Scan **keine Event-IDs**, erscheint automatisch ein **Diagnose-Dialog** mit:
