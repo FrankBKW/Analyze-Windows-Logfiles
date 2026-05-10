@@ -281,6 +281,25 @@ Abfrage läuft... PC-EXAMPLE  ·  Security  (2 / 5)
 - Der Balken zeigt den Fortschritt pro Computer × Log-Gruppe.
 - Nach Abschluss verschwindet der Balken automatisch.
 
+### Scan-Diagnose bei Problemen
+
+Findet der Scan **keine Event-IDs**, erscheint automatisch ein **Diagnose-Dialog** mit:
+- Den genauen Fehlermeldungen pro Log
+- Konkreten Fix-Befehlen je nach Fehlerart (lokal vs. remote)
+
+**Lokal – keine Logs gefunden:**
+- Tool als Administrator starten (Rechtsklick → *Als Administrator ausführen* / EXE zeigt UAC-Dialog automatisch)
+- Antivirensoftware kann den Zugriff auf Event-Logs blockieren
+
+**Remote – keine Logs gefunden:**
+> `Get-WinEvent -ComputerName` nutzt **RPC/DCOM (Port 135)**, nicht WinRM.  
+> `Enable-PSRemoting` hilft hier **nicht**.  
+> Auf dem **Ziel-Computer** als Admin ausführen:
+> ```powershell
+> netsh advfirewall firewall set rule group="Remote Event Log Management" new enable=Yes
+> Get-Service EventLog, RemoteRegistry | Start-Service
+> ```
+
 ### Scan-Aktualisierung (🔄 Scan)
 Der **🔄 Scan**-Button scannt den Ziel-Computer erneut und ergänzt den Katalog.
 
