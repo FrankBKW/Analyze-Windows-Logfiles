@@ -192,9 +192,14 @@ PC-EMPFANG, PC-BUCHHALTUNG, SRV-FILESERVER01
 - Im Ergebnis-Fenster erscheint eine zusätzliche Spalte **Computer** sowie ein Filter-Dropdown zum Einschränken auf einen einzelnen Host.
 - Die angegebenen Credentials gelten für alle Computer gleichermaßen.
 
-> **Voraussetzung Remote:** WinRM muss auf den Zielcomputern aktiv sein:
+> **Voraussetzung Remote:** `Get-WinEvent -ComputerName` nutzt **kein WinRM**, sondern RPC/DCOM (Port 135).
+> `Enable-PSRemoting` hilft hier **nicht**. Stattdessen auf dem **Ziel-Computer** als Admin ausführen:
 > ```powershell
-> Enable-PSRemoting -Force   # auf jedem Ziel-Computer einmalig ausführen
+> # Firewall-Regel "Remote Event Log Management" aktivieren:
+> netsh advfirewall firewall set rule group="Remote Event Log Management" new enable=Yes
+>
+> # Dienste sicherstellen:
+> Get-Service EventLog, RemoteRegistry | Start-Service
 > ```
 
 ---
@@ -416,7 +421,7 @@ Das Diagramm berücksichtigt **alle** abgefragten Ergebnisse (vor dem Filter). E
 |---|---|
 | **22-ID-Limit** | `Get-WinEvent -FilterHashtable` unterstützt maximal 22 Event-IDs pro Aufruf. Das Tool teilt die Auswahl automatisch in Batches auf – `Max. Einträge` ist daher ein Limit *pro Batch*, nicht über alle IDs. |
 | **Security-Log** | Erfordert **lokale Administratorrechte** oder Mitgliedschaft in der Gruppe *Event Log Readers*. |
-| **Remote WinRM** | Muss auf Ziel-Computern aktiviert sein. Firewall-Ausnahmen für Port 5985 (HTTP) oder 5986 (HTTPS) notwendig. |
+| **Remote-Zugriff** | `Get-WinEvent -ComputerName` nutzt RPC/DCOM (Port 135), **nicht** WinRM. Auf dem Ziel: `netsh advfirewall firewall set rule group="Remote Event Log Management" new enable=Yes` ausführen. `Enable-PSRemoting` allein reicht nicht. |
 | **Excel nicht vorhanden** | Excel-Export-Button wird automatisch ausgeblendet. CSV-Export steht immer zur Verfügung. |
 | **Diagramm-Assembly** | Fehlt `System.Windows.Forms.DataVisualization`, öffnet sich das Diagramm-Fenster mit einer Fehlermeldung. |
 | **Scan-Sample-Größe** | Der Schnell-Scan liest nur 15 Events pro Log. IDs, die in keinem der letzten 15 Einträge eines Logs vorkommen, werden erst beim Manifest-Scan erkannt. |
