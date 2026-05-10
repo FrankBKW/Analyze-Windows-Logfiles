@@ -483,11 +483,10 @@ function Show-ScanDiagnostics {
 REMOTE-ZUGRIFF: Get-WinEvent nutzt kein WinRM!
 Enable-PSRemoting hilft hier NICHT.
 
-Auf dem ZIEL-Computer als Admin ausführen:
-  netsh advfirewall firewall set rule group="Remote Event Log Management" new enable=Yes
+Auf dem ZIEL-Computer als Admin (PowerShell) ausführen:
+  Enable-NetFirewallRule -Name "RemoteEventLogSvc-In-TCP","RemoteEventLogSvc-NP-In-TCP","RemoteEventLogSvc-RPCSS-In-TCP"
 
-Oder per PowerShell auf dem Ziel:
-  Set-NetFirewallRule -DisplayGroup "Remote Event Log Management" -Enabled True
+(Regelname ist sprachunabhängig – funktioniert auf DE und EN Windows)
 
 Dienste auf dem Ziel prüfen (müssen laufen):
   Get-Service EventLog, RemoteRegistry | Start-Service
