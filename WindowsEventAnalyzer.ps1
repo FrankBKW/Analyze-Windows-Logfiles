@@ -523,6 +523,112 @@ Scan kann manuell über den 'Scan'-Button erneut gestartet werden.
     ) | Out-Null
 }
 
+function Invoke-RemoteTest {
+    param(
+        [string]$Computer,
+        [System.Management.Automation.PSCredential]$Credential = $null
+    )
+
+    $lines  = [System.Collections.Generic.List[string]]::new()
+    $ok     = "  [OK] "; $fail = "  [!!] "; $warn = "  [??] "
+
+    $lines.Add("Verbindungstest: $Computer")
+    $lines.Add("=" * 52)
+
+    # 1. Ping
+    $lines.Add("")
+    $lines.Add("1) Netzwerk-Erreichbarkeit (Ping)")
+    try {
+        $ping = Test-Connection -ComputerName $Computer -Count 1 -ErrorAction Stop
+        $lines.Add("$ok Erreichbar  (RTT: $($ping.ResponseTime) ms)")
+    } catch {
+        $lines.Add("$fail NICHT erreichbar – $($_.Exception.Message)")
+        $lines.Add("   → Netzwerk/Hostname prüfen, Ping ggf. durch Firewall geblockt")
+    }
+
+    # 2. RPC Port 135
+    $lines.Add("")
+    $lines.Add("2) RPC/DCOM Port 135 (benötigt für Get-WinEvent)")
+    try {
+        $tcp = Test-NetConnection -ComputerName $Computer -Port 135 -WarningAction SilentlyContinue -ErrorAction Stop
+        if ($tcp.TcpTestSucceeded) {
+            $lines.Add("$ok Port 135 offen")
+        } else {
+            $lines.Add("$fail Port 135 BLOCKIERT")
+            $lines.Add("   → Auf Ziel-PC als Admin:")
+            $lines.Add('   Enable-NetFirewallRule -Name "RemoteEventLogSvc-In-TCP","RemoteEventLogSvc-NP-In-TCP","RemoteEventLogSvc-RPCSS-In-TCP"')
+        }
+    } catch {
+        $lines.Add("$warn Konnte Port 135 nicht testen: $($_.Exception.Message)")
+    }
+
+    # 3. Get-WinEvent direkt versuchen – zeigt den genauen Fehler
+    $lines.Add("")
+    $lines.Add("3) Get-WinEvent -ListLog System (direkter Test)")
+    try {
+        $p = @{ ListLog = 'System'; ComputerName = $Computer; ErrorAction = 'Stop' }
+        if ($Credential) { $p.Credential = $Credential }
+        Get-WinEvent @p | Out-Null
+        $lines.Add("$ok Zugriff erfolgreich")
+    } catch {
+        $errText = $_.Exception.Message
+        $lines.Add("$fail Fehler: $errText")
+
+        # Bekannte Fehler mit konkretem Fix
+        if ($errText -match 'Zugriff.*verweigert|Access.*denied') {
+            $lines.Add("   → Benutzer hat keine Leserechte.")
+            $lines.Add("   → Auf Ziel-PC: Benutzer zur Gruppe 'Event Log Readers' hinzufügen")
+            $lines.Add("   → Oder für Workgroup (kein Domain): Registry-Key setzen:")
+            $lines.Add('   reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v LocalAccountTokenFilterPolicy /t REG_DWORD /d 1 /f')
+        } elseif ($errText -match 'RPC|1722|1726|nicht verfügbar|unavailable') {
+            $lines.Add("   → RPC-Dienst nicht erreichbar.")
+            $lines.Add("   → Auf Ziel-PC als Admin:")
+            $lines.Add('   Enable-NetFirewallRule -Name "RemoteEventLogSvc-In-TCP","RemoteEventLogSvc-NP-In-TCP","RemoteEventLogSvc-RPCSS-In-TCP"')
+            $lines.Add("   Get-Service RemoteRegistry | Start-Service")
+        } elseif ($errText -match 'Anmeldung|logon|credentials|Kennwort|password') {
+            $lines.Add("   → Anmeldedaten falsch oder fehlen.")
+            $lines.Add("   → Domain/Benutzer/Passwort im Hauptfenster eingeben")
+        } elseif ($errText -match 'network path|Netzwerkpfad') {
+            $lines.Add("   → Computer nicht im Netzwerk erreichbar oder Name nicht auflösbar.")
+        }
+    }
+
+    # 4. RemoteRegistry-Dienst
+    $lines.Add("")
+    $lines.Add("4) RemoteRegistry-Dienst auf Ziel")
+    try {
+        $p2 = @{ ComputerName = $Computer; ErrorAction = 'Stop' }
+        if ($Credential) { $p2.Credential = $Credential }
+        $svc = Get-Service -Name RemoteRegistry @p2
+        if ($svc.Status -eq 'Running') {
+            $lines.Add("$ok RemoteRegistry läuft")
+        } else {
+            $lines.Add("$warn RemoteRegistry Status: $($svc.Status)")
+            $lines.Add("   → Auf Ziel-PC: Get-Service RemoteRegistry | Start-Service")
+        }
+    } catch {
+        $lines.Add("$warn Dienststatus nicht abfragbar: $($_.Exception.Message)")
+    }
+
+    # 5. Workgroup-UAC-Hinweis
+    $lines.Add("")
+    $lines.Add("5) Workgroup UAC-Filterung (LocalAccountTokenFilterPolicy)")
+    $lines.Add("${warn} Kann nur lokal auf dem Ziel geprüft werden.")
+    $lines.Add("   Falls kein Domain-Join: Auf Ziel-PC als Admin ausführen:")
+    $lines.Add('   reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v LocalAccountTokenFilterPolicy /t REG_DWORD /d 1 /f')
+    $lines.Add("   (danach Neustart des Ziel-PCs erforderlich)")
+
+    $lines.Add("")
+    $lines.Add("=" * 52)
+
+    [System.Windows.Forms.MessageBox]::Show(
+        ($lines -join "`n"),
+        "Remote-Verbindungstest: $Computer",
+        [System.Windows.Forms.MessageBoxButtons]::OK,
+        [System.Windows.Forms.MessageBoxIcon]::Information
+    ) | Out-Null
+}
+
 function Invoke-DocumentedIDsScan {
     # Liest Provider-Manifeste, um ALLE dokumentierten Event-IDs pro Log zu erfassen
     # (auch solche, die im aktuellen Sample nicht vorgekommen sind).
@@ -1525,6 +1631,20 @@ $btnBeenden = New-StyledButton "Beenden" 15 748 100 42 $false
 $formMain.Controls.Add($btnBeenden)
 $btnBeenden.Add_Click({ $formMain.Close() })
 
+$btnRemoteTest = New-StyledButton "Remote-Test" 125 748 120 42 $false
+$formMain.Controls.Add($btnRemoteTest)
+$btnRemoteTest.Add_Click({
+    $target = $txtComputer.Text.Trim()
+    if ([string]::IsNullOrWhiteSpace($target) -or (Test-IsLocalComputer $target)) {
+        [System.Windows.Forms.MessageBox]::Show(
+            "Remote-Test ist nur für externe Computer sinnvoll.`nBitte einen Remote-Hostnamen oder eine IP im Computer-Feld eingeben.",
+            "Remote-Test", "OK", "Information") | Out-Null
+        return
+    }
+    $cred = Get-FormCredential
+    Invoke-RemoteTest -Computer $target -Credential $cred
+})
+
 $btnXPath = New-StyledButton "XPath-Abfrage" 560 748 130 42 $false
 $formMain.Controls.Add($btnXPath)
 
@@ -1558,6 +1678,15 @@ $toolTip.SetToolTip($btnXPath,
     "XPath-Direktabfrage öffnen: Freies XPath-Filterfeld`n" +
     "für erweiterte Filterung des Windows-Ereignisprotokolls.`n`n" +
     "Beispiel: *[System[EventID=4625]]")
+
+$toolTip.SetToolTip($btnRemoteTest,
+    "Verbindungstest für Remote-Computer:`n" +
+    "  1) Ping / Netzwerk-Erreichbarkeit`n" +
+    "  2) RPC Port 135 (benötigt für Get-WinEvent)`n" +
+    "  3) Direkter Get-WinEvent-Test mit Fehlertext`n" +
+    "  4) RemoteRegistry-Dienststatus`n" +
+    "  5) Workgroup-UAC-Hinweis`n`n" +
+    "Computer-Feld muss einen Remote-Hostnamen enthalten.")
 
 $toolTip.SetToolTip($btnBeenden,
     "Programm beenden.")
