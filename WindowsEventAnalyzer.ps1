@@ -357,9 +357,15 @@ function New-ProgressForm {
 
 function Test-IsLocalComputer {
     param([string]$Computer)
-    $localNames = @('localhost', '127.0.0.1', '.', '', $env:COMPUTERNAME)
-    return $localNames -contains $Computer.Trim().ToUpper() -or
-           $Computer.Trim().ToUpper() -eq $env:COMPUTERNAME.ToUpper()
+    $c = $Computer.Trim().ToUpper()
+    if ($c -eq '' -or $c -eq 'LOCALHOST' -or $c -eq '127.0.0.1' -or $c -eq '.') { return $true }
+    if ($c -eq $env:COMPUTERNAME.ToUpper()) { return $true }
+    # FQDN-Vergleich (z.B. PC01.domain.local)
+    try {
+        $fqdn = [System.Net.Dns]::GetHostEntry('').HostName.ToUpper()
+        if ($c -eq $fqdn) { return $true }
+    } catch {}
+    return $false
 }
 
 function Invoke-ComputerEventScan {
@@ -373,6 +379,8 @@ function Invoke-ComputerEventScan {
 
     $found = [System.Collections.Generic.List[PSObject]]::new()
     $script:scanCancelled = $false
+    $script:scanErrors    = [System.Collections.Generic.List[string]]::new()
+    $script:scanListError = $null
 
     # Lokal vs. Remote: lokale Abfragen NICHT über WinRM (ComputerName) leiten –
     # das schlägt fehl wenn WinRM deaktiviert ist.
@@ -394,6 +402,7 @@ function Invoke-ComputerEventScan {
                    Sort-Object { if ($_.RecordCount) { $_.RecordCount } else { 0 } } -Descending |
                    Select-Object -First $MaxLogs
     } catch {
+        $script:scanListError = $_.Exception.Message
         $ProgressUI.LblMain.Text = "Fehler beim Auflisten der Logs: $($_.Exception.Message)"
         Start-Sleep -Seconds 2
         return $null
@@ -455,11 +464,64 @@ function Invoke-ComputerEventScan {
                 })
             }
         } catch {
-            # Log nicht lesbar (Berechtigung o.ä.) – überspringen
+            $errMsg = $_.Exception.Message
+            if ($errMsg -notmatch 'No events were found|keine Ereignisse gefunden') {
+                $script:scanErrors.Add("$($log.LogName): $errMsg")
+            }
         }
     }
 
     return $found
+}
+
+function Show-ScanDiagnostics {
+    param([string]$Computer, [bool]$IsLocal)
+
+    $remoteHint = if (-not $IsLocal) { @"
+
+──────────────────────────────────────────────────
+REMOTE-ZUGRIFF: Get-WinEvent nutzt kein WinRM!
+Enable-PSRemoting hilft hier NICHT.
+
+Auf dem ZIEL-Computer als Admin ausführen:
+  netsh advfirewall firewall set rule group="Remote Event Log Management" new enable=Yes
+
+Oder per PowerShell auf dem Ziel:
+  Set-NetFirewallRule -DisplayGroup "Remote Event Log Management" -Enabled True
+
+Dienste auf dem Ziel prüfen (müssen laufen):
+  Get-Service EventLog, RemoteRegistry | Start-Service
+"@ } else { "" }
+
+    $localHint = if ($IsLocal) { @"
+
+──────────────────────────────────────────────────
+LOKALER ZUGRIFF:
+  • Tool als Administrator starten (Rechtsklick → Als Admin ausführen)
+  • Security-Log erfordert lokale Admin-Rechte
+  • Antivirensoftware kann den Zugriff blockieren
+"@ } else { "" }
+
+    $errorSection = ""
+    if ($script:scanListError) {
+        $errorSection = "`n──────────────────────────────────────────────────`nFehler beim Log-Listing:`n  $($script:scanListError)`n"
+    } elseif ($script:scanErrors.Count -gt 0) {
+        $sample = ($script:scanErrors | Select-Object -First 5) -join "`n  "
+        $errorSection = "`n──────────────────────────────────────────────────`nFehler beim Lesen ($($script:scanErrors.Count) Logs betroffen):`n  $sample`n"
+    }
+
+    $msg = @"
+Scan auf '$Computer' hat keine Event-IDs gefunden.
+$errorSection$remoteHint$localHint
+──────────────────────────────────────────────────
+Scan kann manuell über den 'Scan'-Button erneut gestartet werden.
+"@
+    [System.Windows.Forms.MessageBox]::Show(
+        $msg,
+        "Scan-Diagnose",
+        [System.Windows.Forms.MessageBoxButtons]::OK,
+        [System.Windows.Forms.MessageBoxIcon]::Warning
+    ) | Out-Null
 }
 
 function Invoke-DocumentedIDsScan {
@@ -691,7 +753,8 @@ if ($dlgScan -eq [System.Windows.Forms.DialogResult]::Yes) {
         if ($script:scanCancelled) {
             $script:startupScanResult = "Scan vom Benutzer abgebrochen."
         } elseif ($addedCount -eq 0) {
-            $script:startupScanResult = "⚠  Scan: Keine IDs gefunden. Ggf. als Administrator starten oder 'Scan'-Button erneut verwenden."
+            $script:startupScanResult = "⚠  Scan: Keine IDs gefunden. Diagnose wird angezeigt..."
+            Show-ScanDiagnostics -Computer $startupComputer -IsLocal $true
         } else {
             $script:startupScanResult = "Schnell-Scan: $addedCount IDs aus $logsCount Logs erkannt. Für Manifest-Scan: 'Scan + Manifest' nutzen."
         }
@@ -1289,6 +1352,11 @@ $btnRescan.Add_Click({
         if ($script:scanCancelled) {
             $lblStatus.ForeColor = $clrMuted
             $lblStatus.Text = "Scan abgebrochen."
+        } elseif ($added -eq 0) {
+            $lblStatus.ForeColor = $clrWarn
+            $lblStatus.Text = "⚠  Scan: Keine IDs gefunden."
+            $isLocalTarget = Test-IsLocalComputer $target
+            Show-ScanDiagnostics -Computer $target -IsLocal $isLocalTarget
         } else {
             $suffix = if ($withManifest) { " + $addedDocs2 dokumentierte IDs" } else { "" }
             $lblStatus.ForeColor = $clrSuccess
@@ -1299,6 +1367,8 @@ $btnRescan.Add_Click({
         try { $progUI2.Form.Close(); $progUI2.Form.Dispose() } catch {}
         $lblStatus.ForeColor = $clrWarn
         $lblStatus.Text = "⚠  Scan fehlgeschlagen: $($_.Exception.Message)"
+        $isLocalTarget = Test-IsLocalComputer $target
+        Show-ScanDiagnostics -Computer $target -IsLocal $isLocalTarget
     }
 
     Update-EventList
