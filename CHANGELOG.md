@@ -63,3 +63,4 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 - [2026-05-10 19:20:31] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-10 19:20:54] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-10 19:22:31] Bearbeitet: README.md
+- [2026-05-10 19:22:47] Bearbeitet: README.md
