@@ -50,6 +50,16 @@
 #  oder das Script mit einem Code-Signing-Zertifikat signieren.
 #
 # ============================================================
+
+# ── Auto-Elevation: als Administrator neu starten wenn nötig ─
+if (-not ([Security.Principal.WindowsPrincipal]
+          [Security.Principal.WindowsIdentity]::GetCurrent()
+         ).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    $argList = "-ExecutionPolicy Bypass -File `"$PSCommandPath`""
+    Start-Process powershell.exe -ArgumentList $argList -Verb RunAs
+    exit
+}
+
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Windows.Forms.DataVisualization -ErrorAction SilentlyContinue

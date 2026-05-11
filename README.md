@@ -100,15 +100,14 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 
 1. **`WindowsEventAnalyzer.ps1`** herunterladen oder in ein beliebiges Verzeichnis legen.
 
-2. **Als Administrator starten** – Rechtsklick auf PowerShell → *Als Administrator ausführen*:
+2. **Starten** – das Script erkennt fehlende Admin-Rechte automatisch und startet sich selbst per UAC-Dialog mit erhöhten Rechten neu:
    ```powershell
    powershell -ExecutionPolicy Bypass -File "WindowsEventAnalyzer.ps1"
    ```
 
-   Oder direkt in einer Admin-PowerShell:
-   ```powershell
-   & "C:\Pfad\zum\WindowsEventAnalyzer.ps1"
-   ```
+   Alternativ direkt per Doppelklick auf die PS1 (sofern `.ps1`-Dateien mit PowerShell verknüpft sind) – die Auto-Elevation übernimmt den Rest.
+
+   > **Hinweis:** Wer die PS1 bewusst ohne Admin-Rechte ausführen möchte (z. B. für Read-Only-Logs), kann den Elevation-Block am Dateianfang auskommentieren. Dann entfällt aber der Zugriff auf Security-Log und Remote-Computer.
 
 3. Beim Start erscheint eine **Abfrage**, ob der lokale Computer gescannt werden soll:
    - **Ja** → Schnell-Scan läuft automatisch: Die aktivsten Event-Logs werden in wenigen Sekunden eingelesen und der Katalog um erkannte Event-IDs ergänzt. Der Vorgang kann jederzeit mit **Überspringen** abgebrochen werden.
