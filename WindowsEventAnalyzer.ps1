@@ -465,7 +465,11 @@ function Invoke-ComputerEventScan {
             }
         } catch {
             $errMsg = $_.Exception.Message
-            if ($errMsg -notmatch 'No events were found|keine Ereignisse gefunden') {
+            $harmless = 'No events were found|keine Ereignisse gefunden' +
+                        '|channel could not be found|Kanal wurde nicht gefunden' +
+                        '|There is not an event log|kein Ereignisprotokoll' +
+                        '|not found|nicht gefunden|existiert nicht|does not exist'
+            if ($errMsg -notmatch $harmless) {
                 $script:scanErrors.Add("$($log.LogName): $errMsg")
             }
         }
@@ -2352,10 +2356,15 @@ $btnAbfragen.Add_Click({
                         })
                     }
                 } catch [System.Exception] {
-                    if ($_.Exception.Message -match "No events were found|Es wurden keine Ereignisse gefunden") {
-                        # nichts tun
-                    } else {
-                        $batchErrors += "$($_.Exception.Message)"
+                    $errMsg = $_.Exception.Message
+                    # Harmlose Fälle: Log leer, Log existiert nicht auf diesem Computer
+                    $harmless = 'No events were found|Es wurden keine Ereignisse gefunden' +
+                                '|channel could not be found|Kanal wurde nicht gefunden' +
+                                '|There is not an event log|kein Ereignisprotokoll' +
+                                '|not found|nicht gefunden|existiert nicht|does not exist' +
+                                '|The parameter is incorrect|Der Parameter ist falsch'
+                    if ($errMsg -notmatch $harmless) {
+                        $batchErrors += $errMsg
                     }
                 }
             }
