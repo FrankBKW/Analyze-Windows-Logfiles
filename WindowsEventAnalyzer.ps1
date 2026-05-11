@@ -523,6 +523,105 @@ Scan kann manuell über den 'Scan'-Button erneut gestartet werden.
     ) | Out-Null
 }
 
+function Invoke-LocalTest {
+    $lines = [System.Collections.Generic.List[string]]::new()
+    $ok = "  [OK] "; $fail = "  [!!] "; $warn = "  [??] "
+
+    $lines.Add("Lokaler Selbsttest: $env:COMPUTERNAME")
+    $lines.Add("=" * 52)
+
+    # 1. Admin-Rechte
+    $lines.Add("")
+    $lines.Add("1) Administrator-Rechte")
+    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    if ($isAdmin) {
+        $lines.Add("$ok Läuft als Administrator")
+    } else {
+        $lines.Add("$fail KEIN Administrator – Security-Log nicht lesbar")
+        $lines.Add("   → EXE per Rechtsklick 'Als Administrator ausführen'")
+    }
+
+    # 2. PowerShell-Version
+    $lines.Add("")
+    $lines.Add("2) PowerShell / .NET Version")
+    $lines.Add("$ok PowerShell $($PSVersionTable.PSVersion)  |  .NET $([System.Environment]::Version)")
+    $lines.Add("   Windows $([System.Environment]::OSVersion.Version)  |  $env:PROCESSOR_ARCHITECTURE")
+
+    # 3. EventLog-Dienst
+    $lines.Add("")
+    $lines.Add("3) Windows EventLog-Dienst")
+    try {
+        $svc = Get-Service -Name EventLog -ErrorAction Stop
+        if ($svc.Status -eq 'Running') {
+            $lines.Add("$ok EventLog-Dienst läuft")
+        } else {
+            $lines.Add("$fail EventLog-Dienst Status: $($svc.Status)")
+        }
+    } catch {
+        $lines.Add("$fail Dienst nicht abfragbar: $($_.Exception.Message)")
+    }
+
+    # 4. Get-WinEvent ListLog (alle Logs)
+    $lines.Add("")
+    $lines.Add("4) Get-WinEvent -ListLog * (Logs auflisten)")
+    try {
+        $logs = @(Get-WinEvent -ListLog * -ErrorAction Stop | Where-Object { $_.IsEnabled })
+        $lines.Add("$ok $($logs.Count) aktive Logs gefunden")
+    } catch {
+        $lines.Add("$fail Fehler: $($_.Exception.Message)")
+    }
+
+    # 5. System-Log lesen
+    $lines.Add("")
+    $lines.Add("5) System-Log lesen (Get-WinEvent -LogName System)")
+    try {
+        $ev = Get-WinEvent -LogName System -MaxEvents 1 -ErrorAction Stop
+        $lines.Add("$ok System-Log lesbar (neuester Eintrag: $($ev.TimeCreated))")
+    } catch {
+        $lines.Add("$fail Fehler: $($_.Exception.Message)")
+    }
+
+    # 6. Security-Log lesen
+    $lines.Add("")
+    $lines.Add("6) Security-Log lesen (erfordert Admin)")
+    try {
+        $ev = Get-WinEvent -LogName Security -MaxEvents 1 -ErrorAction Stop
+        $lines.Add("$ok Security-Log lesbar")
+    } catch {
+        $errMsg = $_.Exception.Message
+        if ($errMsg -match 'Zugriff|Access|denied') {
+            $lines.Add("$warn Security-Log: Zugriff verweigert (kein Admin oder Gruppenrichtlinie)")
+        } else {
+            $lines.Add("$warn Security-Log: $errMsg")
+        }
+    }
+
+    # 7. Antivirus-Hinweis
+    $lines.Add("")
+    $lines.Add("7) Antivirus / EDR")
+    try {
+        $av = Get-CimInstance -Namespace root/SecurityCenter2 -ClassName AntivirusProduct -ErrorAction Stop |
+              Select-Object -ExpandProperty displayName
+        $avList = ($av -join ", ")
+        $lines.Add("$warn Aktiv: $avList")
+        $lines.Add("   → AV kann ps2exe-kompilierte EXE blockieren.")
+        $lines.Add("   → Test: PS1-Script direkt starten statt EXE:")
+        $lines.Add("   powershell -ExecutionPolicy Bypass -File WindowsEventAnalyzer.ps1")
+    } catch {
+        $lines.Add("$ok Kein Antivirus über WMI erkannt (oder Server-OS)")
+    }
+
+    $lines.Add("")
+    $lines.Add("=" * 52)
+
+    [System.Windows.Forms.MessageBox]::Show(
+        ($lines -join "`n"),
+        "Lokaler Selbsttest: $env:COMPUTERNAME",
+        [System.Windows.Forms.MessageBoxButtons]::OK,
+        [System.Windows.Forms.MessageBoxIcon]::Information
+    ) | Out-Null
+}
+
 function Invoke-RemoteTest {
     param(
         [string]$Computer,
@@ -1631,7 +1730,11 @@ $btnBeenden = New-StyledButton "Beenden" 15 748 100 42 $false
 $formMain.Controls.Add($btnBeenden)
 $btnBeenden.Add_Click({ $formMain.Close() })
 
-$btnRemoteTest = New-StyledButton "Remote-Test" 125 748 120 42 $false
+$btnLocalTest = New-StyledButton "Lokaler Test" 125 748 115 42 $false
+$formMain.Controls.Add($btnLocalTest)
+$btnLocalTest.Add_Click({ Invoke-LocalTest })
+
+$btnRemoteTest = New-StyledButton "Remote-Test" 248 748 115 42 $false
 $formMain.Controls.Add($btnRemoteTest)
 $btnRemoteTest.Add_Click({
     $target = $txtComputer.Text.Trim()
@@ -1678,6 +1781,16 @@ $toolTip.SetToolTip($btnXPath,
     "XPath-Direktabfrage öffnen: Freies XPath-Filterfeld`n" +
     "für erweiterte Filterung des Windows-Ereignisprotokolls.`n`n" +
     "Beispiel: *[System[EventID=4625]]")
+
+$toolTip.SetToolTip($btnLocalTest,
+    "Lokaler Selbsttest – prüft auf diesem Computer:`n" +
+    "  1) Administrator-Rechte`n" +
+    "  2) PowerShell / .NET Version`n" +
+    "  3) EventLog-Dienst Status`n" +
+    "  4) Get-WinEvent ListLog`n" +
+    "  5) System-Log lesbar`n" +
+    "  6) Security-Log lesbar`n" +
+    "  7) Antivirus aktiv (kann EXE blockieren)")
 
 $toolTip.SetToolTip($btnRemoteTest,
     "Verbindungstest für Remote-Computer:`n" +
