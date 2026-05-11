@@ -295,6 +295,7 @@ function New-ProgressForm {
     $pf.BackColor       = $clrBg
     $pf.Font            = $fontNormal
     $pf.ControlBox      = $false
+    $pf.TopMost         = $true
 
     $pnlHead = New-Object System.Windows.Forms.Panel
     $pnlHead.Dock      = "Top"
@@ -491,6 +492,7 @@ function Show-CopyableDialog {
     $dlg.MinimumSize     = New-Object System.Drawing.Size(480, 320)
     $dlg.BackColor       = [System.Drawing.Color]::FromArgb(245,245,250)
     $dlg.Font            = New-Object System.Drawing.Font("Segoe UI", 9)
+    $dlg.TopMost         = $true
 
     $pnlTop = New-Object System.Windows.Forms.Panel
     $pnlTop.Dock = "Top"; $pnlTop.Height = 42
@@ -985,7 +987,18 @@ function New-SectionPanel($x, $y, $w, $h, $title) {
 $script:startupScanResult = $null
 $startupComputer = $env:COMPUTERNAME
 
+# Temporäres TopMost-Fenster als Owner – stellt sicher dass der Dialog im Vordergrund erscheint
+$_tmpOwner = New-Object System.Windows.Forms.Form
+$_tmpOwner.TopMost      = $true
+$_tmpOwner.StartPosition = "CenterScreen"
+$_tmpOwner.Size         = New-Object System.Drawing.Size(1, 1)
+$_tmpOwner.FormBorderStyle = "None"
+$_tmpOwner.ShowInTaskbar = $false
+$_tmpOwner.Show()
+$_tmpOwner.Activate()
+
 $dlgScan = [System.Windows.Forms.MessageBox]::Show(
+    $_tmpOwner,
     "Lokalen Computer '$startupComputer' beim Start scannen?`n`n" +
     "Der Schnell-Scan erkennt vorhandene Event-IDs und füllt die Ereignisauswahl automatisch.`n" +
     "Bei ausschließlicher Remote-Nutzung oder für einen schnelleren Start kann dieser Schritt übersprungen werden.",
@@ -994,6 +1007,7 @@ $dlgScan = [System.Windows.Forms.MessageBox]::Show(
     [System.Windows.Forms.MessageBoxIcon]::Question,
     [System.Windows.Forms.MessageBoxDefaultButton]::Button1
 )
+$_tmpOwner.Dispose()
 
 if ($dlgScan -eq [System.Windows.Forms.DialogResult]::Yes) {
     try {
@@ -1040,6 +1054,9 @@ $formMain.BackColor       = $clrBg
 $formMain.FormBorderStyle = "FixedSingle"
 $formMain.MaximizeBox     = $false
 $formMain.Font            = $fontNormal
+$formMain.TopMost         = $true
+# TopMost nur für den initialen Fokus – nach dem Laden zurücksetzen
+$formMain.Add_Shown({ $formMain.TopMost = $false; $formMain.Activate() })
 
 # ── Titel-Leiste ─────────────────────────────────────────────
 $pnlTitle = New-Object System.Windows.Forms.Panel
@@ -1901,6 +1918,7 @@ $btnXPath.Add_Click({
     $fxp.MaximizeBox     = $false
     $fxp.BackColor       = $clrBg
     $fxp.Font            = $fontNormal
+    $fxp.TopMost         = $true
 
     $pnlXH = New-Object System.Windows.Forms.Panel
     $pnlXH.Dock = "Top"; $pnlXH.Height = 48; $pnlXH.BackColor = $clrAccent
@@ -2011,6 +2029,7 @@ $btnXPath.Add_Click({
             $fxOut.Text          = "XPath-Ergebnisse  –  $($xSorted.Count) Einträge  |  $xLog  |  $xComp"
             $fxOut.Size          = New-Object System.Drawing.Size(1150, 720)
             $fxOut.StartPosition = "CenterScreen"; $fxOut.BackColor = $clrBg; $fxOut.Font = $fontNormal
+            $fxOut.TopMost       = $true
 
             $pnlXT = New-Object System.Windows.Forms.Panel
             $pnlXT.Dock = "Top"; $pnlXT.Height = 56; $pnlXT.BackColor = $clrAccent
@@ -2210,6 +2229,7 @@ $btnXPath.Add_Click({
                 $fxChart.Text = "Zeitreihe - XPath Event-Häufigkeit"
                 $fxChart.Size = New-Object System.Drawing.Size(950,520)
                 $fxChart.StartPosition = "CenterScreen"; $fxChart.BackColor = $clrBg; $fxChart.Font = $fontNormal
+                $fxChart.TopMost = $true
                 try {
                     $xChart = New-Object System.Windows.Forms.DataVisualization.Charting.Chart
                     $xChart.Dock = "Fill"; $xChart.BackColor = $clrBg
@@ -2492,6 +2512,7 @@ $($diag -join "`n")
     $formOut.StartPosition  = "CenterScreen"
     $formOut.BackColor      = $clrBg
     $formOut.Font           = $fontNormal
+    $formOut.TopMost        = $true
 
     # Titel
     $pnlOutTitle = New-Object System.Windows.Forms.Panel
@@ -2874,6 +2895,7 @@ $($diag -join "`n")
         $fChart.StartPosition = "CenterScreen"
         $fChart.BackColor     = $clrBg
         $fChart.Font          = $fontNormal
+        $fChart.TopMost       = $true
 
         try {
             $chart = New-Object System.Windows.Forms.DataVisualization.Charting.Chart

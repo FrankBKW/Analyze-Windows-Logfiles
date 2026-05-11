@@ -485,6 +485,7 @@ Das Diagramm berücksichtigt **alle** abgefragten Ergebnisse (vor dem Filter). E
 | **Scan ohne WinRM (lokal)** | Der Scan erkennt automatisch ob der Ziel-Computer lokal ist und verzichtet dann auf `-ComputerName` (WinRM). Dadurch funktioniert der Scan auch ohne aktiviertes WinRM auf dem lokalen Rechner. |
 | **Nachrichtentexte im Scan** | Der Startup-Scan zeigt keine Klartextnachrichten in der Erkannt-Liste (nur Provider-Name), da der Message-Lookup aus Performancegründen deaktiviert ist. Im Abfrage-Ergebnis erscheinen die vollständigen Nachrichten wie gewohnt. |
 | **Startup-Scan optional** | Beim Start wird per Dialog gefragt, ob der lokale Computer gescannt werden soll. Bei Auswahl „Nein" enthält die Ereignisliste nur den Standard-Katalog – kein Eintrag unter „◈ Erkannt auf Computer". Scan jederzeit manuell nachholbar. |
+| **Fenster im Vordergrund** | Alle Dialoge und Fenster (Startabfrage, Scan-Fortschritt, Ergebnisse, Diagnose, XPath, Diagramm) erscheinen immer im Vordergrund. Das Hauptfenster übergibt den Fokus nach dem Laden wieder an den Desktop. |
 
 ---
 
