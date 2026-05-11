@@ -52,13 +52,14 @@
 # ============================================================
 
 # ── Auto-Elevation: als Administrator neu starten wenn nötig ─
-if (-not ([Security.Principal.WindowsPrincipal]
-          [Security.Principal.WindowsIdentity]::GetCurrent()
-         ).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    $argList = "-ExecutionPolicy Bypass -File `"$PSCommandPath`""
-    Start-Process powershell.exe -ArgumentList $argList -Verb RunAs
+$_principal = New-Object Security.Principal.WindowsPrincipal(
+    [Security.Principal.WindowsIdentity]::GetCurrent()
+)
+if (-not $_principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Start-Process powershell.exe -ArgumentList "-ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
     exit
 }
+Remove-Variable _principal
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
