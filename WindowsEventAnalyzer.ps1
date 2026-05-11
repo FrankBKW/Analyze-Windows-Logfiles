@@ -392,7 +392,9 @@ function Invoke-ComputerEventScan {
     [System.Windows.Forms.Application]::DoEvents()
 
     try {
-        $listParams = @{ ListLog = '*'; ErrorAction = 'Stop' }
+        # SilentlyContinue: defekte/fehlende Log-Dateien (z.B. RemoteFX-Debug) werden
+        # übersprungen statt den gesamten Scan abzubrechen
+        $listParams = @{ ListLog = '*'; ErrorAction = 'SilentlyContinue' }
         if (-not $isLocal) { $listParams.ComputerName = $Computer }
         if ($Credential -and -not $isLocal) { $listParams.Credential = $Credential }
 
@@ -807,7 +809,7 @@ function Invoke-DocumentedIDsScan {
     foreach ($logName in $LogNames) {
         if ($script:scanCancelled) { return $found }
         try {
-            $logInfoParams = @{ ListLog = $logName; ErrorAction = 'Stop' }
+            $logInfoParams = @{ ListLog = $logName; ErrorAction = 'SilentlyContinue' }
             if (-not $isLocal) { $logInfoParams.ComputerName = $Computer }
             if ($Credential -and -not $isLocal) { $logInfoParams.Credential = $Credential }
             $logInfo = Get-WinEvent @logInfoParams
