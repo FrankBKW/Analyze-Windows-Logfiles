@@ -478,6 +478,72 @@ function Invoke-ComputerEventScan {
     return $found
 }
 
+function Show-CopyableDialog {
+    param([string]$Title, [string]$Text, [string]$Icon = "Information")
+
+    $dlg = New-Object System.Windows.Forms.Form
+    $dlg.Text            = $Title
+    $dlg.Size            = New-Object System.Drawing.Size(680, 520)
+    $dlg.StartPosition   = "CenterScreen"
+    $dlg.FormBorderStyle = "Sizable"
+    $dlg.MinimumSize     = New-Object System.Drawing.Size(480, 320)
+    $dlg.BackColor       = [System.Drawing.Color]::FromArgb(245,245,250)
+    $dlg.Font            = New-Object System.Drawing.Font("Segoe UI", 9)
+
+    $pnlTop = New-Object System.Windows.Forms.Panel
+    $pnlTop.Dock = "Top"; $pnlTop.Height = 42
+    $pnlTop.BackColor = [System.Drawing.Color]::FromArgb(60,80,140)
+    $lblT = New-Object System.Windows.Forms.Label
+    $lblT.Text = "  $Title"; $lblT.Dock = "Fill"
+    $lblT.Font = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
+    $lblT.ForeColor = [System.Drawing.Color]::White; $lblT.TextAlign = "MiddleLeft"
+    $pnlTop.Controls.Add($lblT); $dlg.Controls.Add($pnlTop)
+
+    $txt = New-Object System.Windows.Forms.TextBox
+    $txt.Multiline   = $true
+    $txt.ReadOnly    = $true
+    $txt.ScrollBars  = "Vertical"
+    $txt.Font        = New-Object System.Drawing.Font("Consolas", 9)
+    $txt.BackColor   = [System.Drawing.Color]::White
+    $txt.ForeColor   = [System.Drawing.Color]::FromArgb(30,30,30)
+    $txt.BorderStyle = "None"
+    $txt.Text        = $Text
+    $txt.Location    = New-Object System.Drawing.Point(10, 52)
+    $txt.Size        = New-Object System.Drawing.Size(644, 380)
+    $txt.Anchor      = "Top,Bottom,Left,Right"
+    $dlg.Controls.Add($txt)
+
+    $pnlBtn = New-Object System.Windows.Forms.Panel
+    $pnlBtn.Dock = "Bottom"; $pnlBtn.Height = 45
+    $pnlBtn.BackColor = [System.Drawing.Color]::FromArgb(235,235,245)
+
+    $btnCopy = New-Object System.Windows.Forms.Button
+    $btnCopy.Text = "📋  Alles kopieren"
+    $btnCopy.Location = New-Object System.Drawing.Point(10, 8)
+    $btnCopy.Size = New-Object System.Drawing.Size(150, 28)
+    $btnCopy.Add_Click({
+        [System.Windows.Forms.Clipboard]::SetText($txt.Text)
+        $btnCopy.Text = "✔  Kopiert!"
+        $btnCopy.BackColor = [System.Drawing.Color]::FromArgb(200,240,200)
+    })
+
+    $btnClose = New-Object System.Windows.Forms.Button
+    $btnClose.Text     = "Schließen"
+    $btnClose.Location = New-Object System.Drawing.Point(170, 8)
+    $btnClose.Size     = New-Object System.Drawing.Size(100, 28)
+    $btnClose.Add_Click({ $dlg.Close() })
+
+    $pnlBtn.Controls.Add($btnCopy)
+    $pnlBtn.Controls.Add($btnClose)
+    $dlg.Controls.Add($pnlBtn)
+
+    $dlg.Add_Resize({
+        $txt.Size = New-Object System.Drawing.Size(($dlg.ClientSize.Width - 20), ($dlg.ClientSize.Height - 97))
+    })
+
+    $dlg.ShowDialog() | Out-Null
+}
+
 function Show-ScanDiagnostics {
     param([string]$Computer, [bool]$IsLocal)
 
@@ -519,12 +585,7 @@ $errorSection$remoteHint$localHint
 ──────────────────────────────────────────────────
 Scan kann manuell über den 'Scan'-Button erneut gestartet werden.
 "@
-    [System.Windows.Forms.MessageBox]::Show(
-        $msg,
-        "Scan-Diagnose",
-        [System.Windows.Forms.MessageBoxButtons]::OK,
-        [System.Windows.Forms.MessageBoxIcon]::Warning
-    ) | Out-Null
+    Show-CopyableDialog -Title "Scan-Diagnose: $Computer" -Text $msg
 }
 
 function Invoke-LocalTest {
@@ -618,12 +679,7 @@ function Invoke-LocalTest {
     $lines.Add("")
     $lines.Add("=" * 52)
 
-    [System.Windows.Forms.MessageBox]::Show(
-        ($lines -join "`n"),
-        "Lokaler Selbsttest: $env:COMPUTERNAME",
-        [System.Windows.Forms.MessageBoxButtons]::OK,
-        [System.Windows.Forms.MessageBoxIcon]::Information
-    ) | Out-Null
+    Show-CopyableDialog -Title "Lokaler Selbsttest: $env:COMPUTERNAME" -Text ($lines -join "`n")
 }
 
 function Invoke-RemoteTest {
@@ -724,12 +780,7 @@ function Invoke-RemoteTest {
     $lines.Add("")
     $lines.Add("=" * 52)
 
-    [System.Windows.Forms.MessageBox]::Show(
-        ($lines -join "`n"),
-        "Remote-Verbindungstest: $Computer",
-        [System.Windows.Forms.MessageBoxButtons]::OK,
-        [System.Windows.Forms.MessageBoxIcon]::Information
-    ) | Out-Null
+    Show-CopyableDialog -Title "Remote-Verbindungstest: $Computer" -Text ($lines -join "`n")
 }
 
 function Invoke-DocumentedIDsScan {
