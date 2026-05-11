@@ -281,6 +281,22 @@ Abfrage läuft... PC-EXAMPLE  ·  Security  (2 / 5)
 - Der Balken zeigt den Fortschritt pro Computer × Log-Gruppe.
 - Nach Abschluss verschwindet der Balken automatisch.
 
+### Lokaler Selbsttest (🖥️ Lokaler Test Button)
+
+Der **Lokaler Test**-Button (untere Leiste) prüft auf dem aktuellen Computer warum Logs nicht gelesen werden können:
+
+| Schritt | Was wird geprüft |
+|---|---|
+| 1) Administrator-Rechte | Läuft das Tool mit erhöhten Rechten? |
+| 2) PowerShell / .NET | Version und Architektur |
+| 3) EventLog-Dienst | Läuft der Windows EventLog-Dienst? |
+| 4) ListLog * | Können alle Logs aufgelistet werden? |
+| 5) System-Log | Direkter Lesezugriff |
+| 6) Security-Log | Lesezugriff (erfordert Admin) |
+| 7) Antivirus | Ist AV aktiv? (kann ps2exe-EXE blockieren) |
+
+> **Hinweis:** Das Script ist **nicht** an einen bestimmten Computer gebunden. Alle Pfade und Namen werden dynamisch über `$env:COMPUTERNAME` und `$env:APPDATA` ermittelt. Funktioniert die EXE nicht, `.ps1` direkt starten: `powershell -ExecutionPolicy Bypass -File WindowsEventAnalyzer.ps1`
+
 ### Remote-Test (🔌 Remote-Test Button)
 
 Der **Remote-Test**-Button (untere Leiste) prüft Schritt für Schritt warum ein Remote-Zugriff scheitert:
