@@ -2015,15 +2015,21 @@ $btnXPath.Add_Click({
                     "Information" { "Information" } "Informationen" { "Information" }
                     default { "$($r.LevelDisplayName)" }
                 }
-                # Katalog-Lookup: Kategorie + Beschreibung aus kuratierter Liste
+                # Katalog-Lookup: Kategorie aus kuratierter Liste
                 $meta = $eventCatalog | Where-Object { $_.ID -eq $r.Id -and $_.Log -eq $xLog } | Select-Object -First 1
+                $firstLineX = ($short -split '[\r\n]' | Where-Object { $_.Trim() -ne "" } | Select-Object -First 1)
+                $descValX = if ($firstLineX -and $firstLineX -ne "(keine Nachricht)") {
+                    if ($firstLineX.Length -gt 120) { $firstLineX.Substring(0,120) + "…" } else { $firstLineX }
+                } elseif ($meta -and $meta.Desc -and $meta.Desc -notmatch '^\[Provider:') {
+                    $meta.Desc
+                } else { "-" }
                 [PSCustomObject]@{
                     Computer  = $xComp
                     Zeit      = $r.TimeCreated; Typ = $typ
                     Protokoll = Get-LogShortLabel $xLog; LogVoll = $xLog
                     EventID   = $r.Id; Quelle = $r.ProviderName
                     Kategorie = if ($meta) { $meta.Category } else { "-" }
-                    Beschr    = if ($meta) { $meta.Desc }     else { "-" }
+                    Beschr    = $descValX
                     Nachricht = $short
                 }
             } | Sort-Object Zeit -Descending)
@@ -2424,14 +2430,15 @@ $btnAbfragen.Add_Click({
                             default           { "$($r.LevelDisplayName)" }
                         }
 
-                        # Beschreibung: Katalog-Text wenn vorhanden, sonst erste Zeile der Nachricht.
-                        # Scan-Metadaten "[Provider: ...]" werden nicht als Beschreibung gezeigt.
-                        $descVal = if ($meta -and $meta.Desc -and $meta.Desc -notmatch '^\[Provider:') {
+                        # Beschreibung: immer erste Zeile der echten Event-Nachricht verwenden –
+                        # nur wenn die Nachricht leer ist, auf den Katalog-Text zurückfallen.
+                        # (Katalog-Text ist pro ID fixiert und stimmt nicht immer mit dem Provider überein.)
+                        $firstLine = ($short -split '[\r\n]' | Where-Object { $_.Trim() -ne "" } | Select-Object -First 1)
+                        $descVal = if ($firstLine -and $firstLine -ne "(keine Nachricht)") {
+                            if ($firstLine.Length -gt 120) { $firstLine.Substring(0,120) + "…" } else { $firstLine }
+                        } elseif ($meta -and $meta.Desc -and $meta.Desc -notmatch '^\[Provider:') {
                             $meta.Desc
-                        } else {
-                            $firstLine = ($short -split '[\r\n]' | Where-Object { $_.Trim() -ne "" } | Select-Object -First 1)
-                            if ($firstLine -and $firstLine.Length -gt 120) { $firstLine.Substring(0,120) + "…" } else { $firstLine }
-                        }
+                        } else { "" }
                         $allResults.Add([PSCustomObject]@{
                             Computer  = $computer
                             Zeit      = $r.TimeCreated
@@ -3011,12 +3018,12 @@ $($diag -join "`n")
                                 "Information"   { "Information" } "Informationen" { "Information" }
                                 default         { "$($r.LevelDisplayName)" }
                             }
-                            $descValL = if ($meta -and $meta.Desc -and $meta.Desc -notmatch '^\[Provider:') {
+                            $firstLineL = ($short -split '[\r\n]' | Where-Object { $_.Trim() -ne "" } | Select-Object -First 1)
+                            $descValL = if ($firstLineL -and $firstLineL -ne "(keine Nachricht)") {
+                                if ($firstLineL.Length -gt 120) { $firstLineL.Substring(0,120) + "…" } else { $firstLineL }
+                            } elseif ($meta -and $meta.Desc -and $meta.Desc -notmatch '^\[Provider:') {
                                 $meta.Desc
-                            } else {
-                                $firstLineL = ($short -split '[\r\n]' | Where-Object { $_.Trim() -ne "" } | Select-Object -First 1)
-                                if ($firstLineL -and $firstLineL.Length -gt 120) { $firstLineL.Substring(0,120) + "…" } else { $firstLineL }
-                            }
+                            } else { "" }
                             $freshResults.Add([PSCustomObject]@{
                                 Zeit = $r.TimeCreated; Typ = $typ
                                 Protokoll = Get-LogShortLabel $logName; LogVoll = $logName
