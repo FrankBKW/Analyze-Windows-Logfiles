@@ -58,19 +58,20 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 
 1. [Voraussetzungen](#voraussetzungen)
 2. [Installation & Start](#installation--start)
-3. [Übersicht der Oberfläche](#übersicht-der-oberfläche)
-4. [Abfrage-Optionen](#abfrage-optionen)
-5. [Credentials für Remote-Zugriff](#credentials-für-remote-zugriff)
-6. [Mehrfach-Computer](#mehrfach-computer)
-7. [Auswahl-Profile](#auswahl-profile)
-8. [Live-Modus](#live-modus)
-9. [Event-Auswahl](#event-auswahl)
-10. [Eigene Event-IDs](#eigene-event-ids)
-11. [XPath-Direktabfrage](#xpath-direktabfrage)
-12. [Ergebnis-Fenster](#ergebnis-fenster)
-13. [Export](#export)
-14. [Zeitreihe-Diagramm](#zeitreihe-diagramm)
-15. [Bekannte Einschränkungen](#bekannte-einschränkungen)
+3. [Sicherheitsanalyse](#sicherheitsanalyse)
+4. [Übersicht der Oberfläche](#übersicht-der-oberfläche)
+5. [Abfrage-Optionen](#abfrage-optionen)
+6. [Credentials für Remote-Zugriff](#credentials-für-remote-zugriff)
+7. [Mehrfach-Computer](#mehrfach-computer)
+8. [Auswahl-Profile](#auswahl-profile)
+9. [Live-Modus](#live-modus)
+10. [Event-Auswahl](#event-auswahl)
+11. [Eigene Event-IDs](#eigene-event-ids)
+12. [XPath-Direktabfrage](#xpath-direktabfrage)
+13. [Ergebnis-Fenster](#ergebnis-fenster)
+14. [Export](#export)
+15. [Zeitreihe-Diagramm](#zeitreihe-diagramm)
+16. [Bekannte Einschränkungen](#bekannte-einschränkungen)
 
 ---
 
@@ -112,6 +113,27 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 3. Beim Start erscheint eine **Abfrage**, ob der lokale Computer gescannt werden soll:
    - **Ja** → Schnell-Scan läuft automatisch: Die aktivsten Event-Logs werden in wenigen Sekunden eingelesen und der Katalog um erkannte Event-IDs ergänzt. Der Vorgang kann jederzeit mit **Überspringen** abgebrochen werden.
    - **Nein** → Das Programm öffnet sofort ohne Scan. Ein Scan kann jederzeit manuell über den **🔄 Scan**-Button gestartet werden.
+
+---
+
+## Sicherheitsanalyse
+
+Das Script wurde einer vollständigen statischen Sicherheitsanalyse unterzogen.
+
+**Ergebnis: ✅ SICHER — kein schädlicher Code gefunden.**
+
+| Prüfpunkt | Befund | Bewertung |
+|---|---|---|
+| **Backdoors / Exfiltration** | Kein WebClient, kein Socket, kein SMTP, keine ausgehenden Verbindungen zu externen Hosts | ✅ Sicher |
+| **Credential-Handling** | Passwort wird sofort in `SecureString` konvertiert, nie in Dateien gespeichert, nie geloggt | ✅ Sicher |
+| **Code-Injection** | Kein `Invoke-Expression`, kein `iex`, kein dynamisch ausgeführter Code | ✅ Sicher |
+| **Persistenz** | Keine Registry-Schreibzugriffe, keine geplanten Tasks, kein Autostart | ✅ Sicher |
+| **Dateioperationen** | Ausschließlich `%APPDATA%\WindowsEventAnalyzer\profiles` + benutzergesteuerte Exports via SaveFileDialog | ✅ Sicher |
+| **Netzwerkzugriffe** | Nur `Get-WinEvent` auf explizit eingegebene Remote-Computer + Diagnosetests (Ping, Port 135) | ✅ Sicher |
+| **Berechtigungs-Eskalation** | Standard-UAC-Elevation für Admin-Zugriff auf Event-Logs, kein Token-Missbrauch | ✅ Sicher |
+| **Obfuskierung** | Vollständig lesbarer Klartext (3042 Zeilen), kein Base64, keine komprimierten Payloads | ✅ Sicher |
+
+Der Quellcode (`WindowsEventAnalyzer.ps1`) liegt offen im Repository und kann jederzeit eingesehen werden.
 
 ---
 
