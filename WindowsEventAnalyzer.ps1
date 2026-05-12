@@ -2009,7 +2009,6 @@ $btnXPath.Add_Click({
                 $r = $_
                 $msg   = if ($r.Message) { $r.Message } else { "(keine Nachricht)" }
                 $short = ($msg -replace "`r`n|`n", " ")
-                if ($short.Length -gt 300) { $short = $short.Substring(0,300) + "..." }
                 $typ = switch ($r.LevelDisplayName) {
                     "Fehler" { "Error" } "Error" { "Error" } "Kritisch" { "Critical" } "Critical" { "Critical" }
                     "Warnung" { "Warning" } "Warning" { "Warning" }
@@ -2410,7 +2409,6 @@ $btnAbfragen.Add_Click({
                         $meta = $idLookup[[int]$r.Id]
                         $msg  = if ($r.Message) { $r.Message } else { "(keine Nachricht)" }
                         $short = ($msg -replace "`r`n|`n", " ")
-                        if ($short.Length -gt 300) { $short = $short.Substring(0, 300) + "..." }
 
                         $typ = switch ($r.LevelDisplayName) {
                             "Fehler"          { "Error" }
@@ -3006,7 +3004,6 @@ $($diag -join "`n")
                             $meta  = $idLookup[[int]$r.Id]
                             $msg   = if ($r.Message) { $r.Message } else { "(keine Nachricht)" }
                             $short = ($msg -replace "`r`n|`n", " ")
-                            if ($short.Length -gt 300) { $short = $short.Substring(0, 300) + "..." }
                             $typ = switch ($r.LevelDisplayName) {
                                 "Fehler"        { "Error" }     "Error"         { "Error" }
                                 "Kritisch"      { "Critical" }  "Critical"      { "Critical" }
