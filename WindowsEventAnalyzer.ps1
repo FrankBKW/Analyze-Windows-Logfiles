@@ -2426,6 +2426,14 @@ $btnAbfragen.Add_Click({
                             default           { "$($r.LevelDisplayName)" }
                         }
 
+                        # Beschreibung: Katalog-Text wenn vorhanden, sonst erste Zeile der Nachricht.
+                        # Scan-Metadaten "[Provider: ...]" werden nicht als Beschreibung gezeigt.
+                        $descVal = if ($meta -and $meta.Desc -and $meta.Desc -notmatch '^\[Provider:') {
+                            $meta.Desc
+                        } else {
+                            $firstLine = ($short -split '[\r\n]' | Where-Object { $_.Trim() -ne "" } | Select-Object -First 1)
+                            if ($firstLine -and $firstLine.Length -gt 120) { $firstLine.Substring(0,120) + "…" } else { $firstLine }
+                        }
                         $allResults.Add([PSCustomObject]@{
                             Computer  = $computer
                             Zeit      = $r.TimeCreated
@@ -2435,7 +2443,7 @@ $btnAbfragen.Add_Click({
                             EventID   = $r.Id
                             Quelle    = $r.ProviderName
                             Kategorie = if ($meta) { $meta.Category } else { "" }
-                            Beschr    = if ($meta) { $meta.Desc }     else { "" }
+                            Beschr    = $descVal
                             Nachricht = $short
                         })
                     }
@@ -3006,12 +3014,18 @@ $($diag -join "`n")
                                 "Information"   { "Information" } "Informationen" { "Information" }
                                 default         { "$($r.LevelDisplayName)" }
                             }
+                            $descValL = if ($meta -and $meta.Desc -and $meta.Desc -notmatch '^\[Provider:') {
+                                $meta.Desc
+                            } else {
+                                $firstLineL = ($short -split '[\r\n]' | Where-Object { $_.Trim() -ne "" } | Select-Object -First 1)
+                                if ($firstLineL -and $firstLineL.Length -gt 120) { $firstLineL.Substring(0,120) + "…" } else { $firstLineL }
+                            }
                             $freshResults.Add([PSCustomObject]@{
                                 Zeit = $r.TimeCreated; Typ = $typ
                                 Protokoll = Get-LogShortLabel $logName; LogVoll = $logName
                                 EventID = $r.Id; Quelle = $r.ProviderName
                                 Kategorie = if ($meta) { $meta.Category } else { "" }
-                                Beschr    = if ($meta) { $meta.Desc }     else { "" }
+                                Beschr    = $descValL
                                 Nachricht = $short
                             })
                         }
