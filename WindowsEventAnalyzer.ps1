@@ -1,6 +1,6 @@
 ﻿# ============================================================
 #  Windows Event Analyzer – Interaktives Abfrage-Tool
-#  Version  : 1.2.10
+#  Version  : 1.2.11
 #  Datum    : 2026-05-13
 #  Autor    : FrankBKW
 #  Anforderungen: Windows PowerShell 5.1 oder PowerShell 7+
@@ -81,7 +81,7 @@ function Resolve-EventUser {
 }
 
 # ── Versions-Info ────────────────────────────────────────────
-$script:AppVersion   = "1.2.10"
+$script:AppVersion   = "1.2.11"
 $script:AppBuildDate = "2026-05-13"
 $script:AppTitle     = "Windows Event Analyzer"
 
@@ -565,9 +565,30 @@ function Invoke-ComputerEventScan {
 }
 
 function Show-ScanSettings {
+    # ── Layout-Konstanten (von oben berechnet, kein ClientSize-Hack) ──
+    $padL   = 14
+    $frmW   = 430    # Fenster-Breite (Client)
+    $col1X  = $padL
+    $col2X  = 222    # zweite Spalte
+    $colW   = 190    # Breite jeder Checkbox
+    $rowH   = 28
+    $startY = 38
+
+    $groups = @($script:scanLogDefs.Keys)
+    $numRows = [Math]::Ceiling($groups.Count / 2)
+    $chkBtm  = $startY + $numRows * $rowH   # unteres Ende Checkboxbereich
+
+    $sepY    = $chkBtm + 10
+    $depthY  = $sepY + 14
+    $hintY   = $depthY + 26
+    $hintBtm = $hintY + 18
+    $btnH    = 28
+    $btnY    = $hintBtm + 14
+    $cliH    = $btnY + $btnH + 14          # ClientSize.Height
+
     $dlg = New-Object System.Windows.Forms.Form
     $dlg.Text            = "Scan-Einstellungen"
-    $dlg.Size            = New-Object System.Drawing.Size(400, 470)
+    $dlg.ClientSize      = New-Object System.Drawing.Size($frmW, $cliH)
     $dlg.StartPosition   = "CenterScreen"
     $dlg.FormBorderStyle = "FixedDialog"
     $dlg.MaximizeBox     = $false
@@ -577,76 +598,63 @@ function Show-ScanSettings {
     $dlg.TopMost         = $true
     $dlg.Add_Shown({ $dlg.TopMost = $false; $dlg.Activate() })
 
-    # Überschrift Logs
+    # ── Überschrift ────────────────────────────────────────────────
     $lblLogs = New-Object System.Windows.Forms.Label
     $lblLogs.Text      = "Zu scannende Log-Gruppen:"
-    $lblLogs.Location  = New-Object System.Drawing.Point(12, 12)
-    $lblLogs.Size      = New-Object System.Drawing.Size(360, 18)
+    $lblLogs.Location  = New-Object System.Drawing.Point($padL, 12)
+    $lblLogs.Size      = New-Object System.Drawing.Size($frmW - $padL * 2, 20)
     $lblLogs.Font      = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Bold)
     $dlg.Controls.Add($lblLogs)
 
-    # Checkboxen in 2 Spalten
-    $groups = @($script:scanLogDefs.Keys)
+    # ── Checkboxen in 2 Spalten ────────────────────────────────────
     $chkMap = @{}
-    $colWidth = 175
-    $rowH     = 26
-    $startY   = 36
-    $col2X    = 200
-
     for ($i = 0; $i -lt $groups.Count; $i++) {
         $grp = $groups[$i]
-        $col = if ($i % 2 -eq 0) { 12 } else { $col2X }
-        $row = [int]($i / 2)
-        $y   = $startY + $row * $rowH
+        $col = if ($i % 2 -eq 0) { $col1X } else { $col2X }
+        $y   = $startY + [int]($i / 2) * $rowH
 
         $chk = New-Object System.Windows.Forms.CheckBox
-        $chk.Text      = $grp
-        $chk.Checked   = $script:scanEnabled[$grp]
-        $chk.Location  = New-Object System.Drawing.Point($col, $y)
-        $chk.Size      = New-Object System.Drawing.Size($colWidth, 22)
+        $chk.Text     = $grp
+        $chk.Checked  = $script:scanEnabled[$grp]
+        $chk.Location = New-Object System.Drawing.Point($col, $y)
+        $chk.Size     = New-Object System.Drawing.Size($colW, 22)
         $dlg.Controls.Add($chk)
         $chkMap[$grp] = $chk
     }
 
-    # Trennlinie
-    $rows = [Math]::Ceiling($groups.Count / 2)
-    $sepY = $startY + $rows * $rowH + 4
-
+    # ── Trennlinie ─────────────────────────────────────────────────
     $sep = New-Object System.Windows.Forms.Label
     $sep.BorderStyle = "Fixed3D"
-    $sep.Location    = New-Object System.Drawing.Point(12, $sepY)
-    $sep.Size        = New-Object System.Drawing.Size(360, 2)
+    $sep.Location    = New-Object System.Drawing.Point($padL, $sepY)
+    $sep.Size        = New-Object System.Drawing.Size($frmW - $padL * 2, 2)
     $dlg.Controls.Add($sep)
 
-    # Scantiefe
-    $depthY = $sepY + 10
-
+    # ── Scantiefe ──────────────────────────────────────────────────
     $lblDepth = New-Object System.Windows.Forms.Label
     $lblDepth.Text     = "Scantiefe (Events pro Log):"
-    $lblDepth.Location = New-Object System.Drawing.Point(12, $depthY)
-    $lblDepth.Size     = New-Object System.Drawing.Size(200, 20)
+    $lblDepth.Location = New-Object System.Drawing.Point($padL, $depthY)
+    $lblDepth.Size     = New-Object System.Drawing.Size(195, 20)
     $dlg.Controls.Add($lblDepth)
 
     $txtDepth = New-Object System.Windows.Forms.TextBox
     $txtDepth.Text     = if ($script:scanDepth -eq 0) { "0" } else { [string]$script:scanDepth }
-    $txtDepth.Location = New-Object System.Drawing.Point(220, ($depthY - 2))
-    $txtDepth.Size     = New-Object System.Drawing.Size(80, 22)
+    $txtDepth.Location = New-Object System.Drawing.Point(218, ($depthY - 1))
+    $txtDepth.Size     = New-Object System.Drawing.Size(90, 22)
     $dlg.Controls.Add($txtDepth)
 
     $lblHint = New-Object System.Windows.Forms.Label
-    $lblHint.Text      = "0 = alle Events (kein Limit)"
-    $lblHint.Location  = New-Object System.Drawing.Point(12, ($depthY + 22))
-    $lblHint.Size      = New-Object System.Drawing.Size(360, 16)
+    $lblHint.Text      = "0 = alle Events ohne Limit"
+    $lblHint.Location  = New-Object System.Drawing.Point($padL, $hintY)
+    $lblHint.Size      = New-Object System.Drawing.Size($frmW - $padL * 2, 16)
     $lblHint.Font      = New-Object System.Drawing.Font("Segoe UI", 8)
     $lblHint.ForeColor = [System.Drawing.Color]::FromArgb(110, 110, 140)
     $dlg.Controls.Add($lblHint)
 
-    # Buttons
-    $btnY = $dlg.ClientSize.Height - 44
+    # ── Buttons ────────────────────────────────────────────────────
     $btnOK = New-Object System.Windows.Forms.Button
     $btnOK.Text      = "OK"
-    $btnOK.Location  = New-Object System.Drawing.Point(200, $btnY)
-    $btnOK.Size      = New-Object System.Drawing.Size(80, 28)
+    $btnOK.Location  = New-Object System.Drawing.Point(($frmW - 196), $btnY)
+    $btnOK.Size      = New-Object System.Drawing.Size(88, $btnH)
     $btnOK.BackColor = [System.Drawing.Color]::FromArgb(74, 74, 170)
     $btnOK.ForeColor = [System.Drawing.Color]::White
     $btnOK.FlatStyle = "Flat"
@@ -655,8 +663,8 @@ function Show-ScanSettings {
 
     $btnCancel = New-Object System.Windows.Forms.Button
     $btnCancel.Text      = "Abbrechen"
-    $btnCancel.Location  = New-Object System.Drawing.Point(292, $btnY)
-    $btnCancel.Size      = New-Object System.Drawing.Size(80, 28)
+    $btnCancel.Location  = New-Object System.Drawing.Point(($frmW - 102), $btnY)
+    $btnCancel.Size      = New-Object System.Drawing.Size(88, $btnH)
     $btnCancel.FlatStyle = "Flat"
     $dlg.Controls.Add($btnCancel)
 
@@ -2258,6 +2266,7 @@ $btnXPath.Add_Click({
             $fxOut = New-Object System.Windows.Forms.Form
             $fxOut.Text          = "XPath-Ergebnisse  –  $($xSorted.Count) Einträge  |  $xLog  |  $xComp"
             $fxOut.Size          = New-Object System.Drawing.Size(1150, 720)
+            $fxOut.MinimumSize   = New-Object System.Drawing.Size(900, 520)
             $fxOut.StartPosition = "CenterScreen"; $fxOut.BackColor = $clrBg; $fxOut.Font = $fontNormal
             $fxOut.TopMost       = $true
             $fxOut.Add_Shown({ $fxOut.TopMost = $false; $fxOut.Activate() })
@@ -2271,15 +2280,23 @@ $btnXPath.Add_Click({
 
             $pnlXF2 = New-Object System.Windows.Forms.Panel
             $pnlXF2.Location = New-Object System.Drawing.Point(10,64); $pnlXF2.Size = New-Object System.Drawing.Size(1115,72)
+            $pnlXF2.Anchor   = [System.Windows.Forms.AnchorStyles]::Top  -bor
+                               [System.Windows.Forms.AnchorStyles]::Left -bor
+                               [System.Windows.Forms.AnchorStyles]::Right
             $pnlXF2.BackColor = $clrPanel
             $pnlXF2.Add_Paint({ param($s,$e); $e.Graphics.DrawRectangle((New-Object System.Drawing.Pen($clrBorder,1)),0,0,$s.Width-1,$s.Height-1) })
 
             # ── Zeile 1: Suche + Zähler ───────────────────────────────
+            $ancLRx = [System.Windows.Forms.AnchorStyles]::Top  -bor [System.Windows.Forms.AnchorStyles]::Left  -bor [System.Windows.Forms.AnchorStyles]::Right
+            $ancRx  = [System.Windows.Forms.AnchorStyles]::Top  -bor [System.Windows.Forms.AnchorStyles]::Right
             $lblXF2 = New-Label "Suche:" 8 12 50 20 $true; $pnlXF2.Controls.Add($lblXF2)
             $txtXF2 = New-Object System.Windows.Forms.TextBox
             $txtXF2.Location = New-Object System.Drawing.Point(62,10); $txtXF2.Size = New-Object System.Drawing.Size(820,22)
+            $txtXF2.Anchor = $ancLRx
             $txtXF2.Font = $fontNormal; $pnlXF2.Controls.Add($txtXF2)
-            $lblXC2 = New-Label "" 890 12 215 20 $false $true; $pnlXF2.Controls.Add($lblXC2)
+            $lblXC2 = New-Label "" 890 12 215 20 $false $true
+            $lblXC2.Anchor = $ancRx
+            $pnlXF2.Controls.Add($lblXC2)
 
             # ── Zeile 2: Export + Diagramm-Buttons ────────────────────
             $btnXE2      = New-StyledButton "CSV-Export"   8  44 110 24 $false
@@ -2297,6 +2314,10 @@ $btnXPath.Add_Click({
             # DGV
             $xdgv = New-Object System.Windows.Forms.DataGridView
             $xdgv.Location = New-Object System.Drawing.Point(10,142); $xdgv.Size = New-Object System.Drawing.Size(1115,472)
+            $xdgv.Anchor   = [System.Windows.Forms.AnchorStyles]::Top    -bor
+                             [System.Windows.Forms.AnchorStyles]::Bottom -bor
+                             [System.Windows.Forms.AnchorStyles]::Left   -bor
+                             [System.Windows.Forms.AnchorStyles]::Right
             $xdgv.BackgroundColor = $clrPanel; $xdgv.GridColor = $clrBorder; $xdgv.BorderStyle = "None"
             $xdgv.Font = $fontSmall; $xdgv.DefaultCellStyle.Font = $fontSmall
             $xdgv.DefaultCellStyle.ForeColor = $clrText; $xdgv.DefaultCellStyle.BackColor = $clrPanel
@@ -2356,6 +2377,9 @@ $btnXPath.Add_Click({
             $lblXDetail = New-Object System.Windows.Forms.Label
             $lblXDetail.Location  = New-Object System.Drawing.Point(10, 622)
             $lblXDetail.Size      = New-Object System.Drawing.Size(1115, 40)
+            $lblXDetail.Anchor    = [System.Windows.Forms.AnchorStyles]::Bottom -bor
+                                    [System.Windows.Forms.AnchorStyles]::Left   -bor
+                                    [System.Windows.Forms.AnchorStyles]::Right
             $lblXDetail.Font      = $fontSmall
             $lblXDetail.ForeColor = $clrMuted
             $lblXDetail.Text      = "Zeile anklicken für vollständige Nachricht  |  Doppelklick für alle Details"
@@ -2751,6 +2775,7 @@ $($diag -join "`n")
     $formOut = New-Object System.Windows.Forms.Form
     $formOut.Text           = "$($script:AppTitle) v$($script:AppVersion)  –  $($sorted.Count) Einträge  |  $zeitText  |  $computerLabel"
     $formOut.Size           = New-Object System.Drawing.Size(1150, 720)
+    $formOut.MinimumSize    = New-Object System.Drawing.Size(900, 520)
     $formOut.StartPosition  = "CenterScreen"
     $formOut.BackColor      = $clrBg
     $formOut.Font           = $fontNormal
@@ -2794,6 +2819,9 @@ $($diag -join "`n")
     $pnlFilter = New-Object System.Windows.Forms.Panel
     $pnlFilter.Location  = New-Object System.Drawing.Point(10, 64)
     $pnlFilter.Size      = New-Object System.Drawing.Size(1115, 72)
+    $pnlFilter.Anchor    = [System.Windows.Forms.AnchorStyles]::Top -bor
+                           [System.Windows.Forms.AnchorStyles]::Left -bor
+                           [System.Windows.Forms.AnchorStyles]::Right
     $pnlFilter.BackColor = $clrPanel
     $pnlFilter.BorderStyle = "None"
     $formOut.Controls.Add($pnlFilter)
@@ -2807,9 +2835,14 @@ $($diag -join "`n")
     $lblFil = New-Label "Suche:" 8 12 55 20 $true
     $pnlFilter.Controls.Add($lblFil)
 
+    # Anker-Konstanten für diesen Block
+    $ancLR  = [System.Windows.Forms.AnchorStyles]::Top  -bor [System.Windows.Forms.AnchorStyles]::Left  -bor [System.Windows.Forms.AnchorStyles]::Right
+    $ancR   = [System.Windows.Forms.AnchorStyles]::Top  -bor [System.Windows.Forms.AnchorStyles]::Right
+
     $txtFilter = New-Object System.Windows.Forms.TextBox
     $txtFilter.Location    = New-Object System.Drawing.Point(68, 10)
     $txtFilter.Size        = New-Object System.Drawing.Size(280, 22)
+    $txtFilter.Anchor      = $ancLR   # wächst mit Fensterbreite
     $txtFilter.Font        = $fontNormal
     $txtFilter.ForeColor   = $clrMuted
     $txtFilter.Text        = "Suche in ID, Quelle, Nachricht..."
@@ -2828,11 +2861,14 @@ $($diag -join "`n")
         }
     })
 
-    # Typ-Filter
-    $pnlFilter.Controls.Add((New-Label "Typ:" 425 12 35 20))
+    # Typ-Filter (bleibt rechts verankert)
+    $lblTyp = New-Label "Typ:" 425 12 35 20
+    $lblTyp.Anchor = $ancR
+    $pnlFilter.Controls.Add($lblTyp)
     $cbTypFilter = New-Object System.Windows.Forms.ComboBox
     $cbTypFilter.Location      = New-Object System.Drawing.Point(465, 10)
     $cbTypFilter.Size          = New-Object System.Drawing.Size(120, 22)
+    $cbTypFilter.Anchor        = $ancR
     $cbTypFilter.DropDownStyle = "DropDownList"
     $cbTypFilter.Font          = $fontNormal
     @("Alle","Critical","Error","Warning","Information","Verbose") |
@@ -2840,11 +2876,14 @@ $($diag -join "`n")
     $cbTypFilter.SelectedIndex = 0
     $pnlFilter.Controls.Add($cbTypFilter)
 
-    # Protokoll-Filter (dynamisch aus den Ergebnissen)
-    $pnlFilter.Controls.Add((New-Label "Protokoll:" 565 12 70 20))
+    # Protokoll-Filter
+    $lblProt = New-Label "Protokoll:" 565 12 70 20
+    $lblProt.Anchor = $ancR
+    $pnlFilter.Controls.Add($lblProt)
     $cbLogFilter = New-Object System.Windows.Forms.ComboBox
     $cbLogFilter.Location      = New-Object System.Drawing.Point(638, 10)
     $cbLogFilter.Size          = New-Object System.Drawing.Size(105, 22)
+    $cbLogFilter.Anchor        = $ancR
     $cbLogFilter.DropDownStyle = "DropDownList"
     $cbLogFilter.Font          = $fontNormal
     $cbLogFilter.Items.Add("Alle") | Out-Null
@@ -2853,11 +2892,14 @@ $($diag -join "`n")
     $cbLogFilter.SelectedIndex = 0
     $pnlFilter.Controls.Add($cbLogFilter)
 
-    # Computer-Filter (dynamisch aus den Ergebnissen)
-    $pnlFilter.Controls.Add((New-Label "Computer:" 750 12 68 20))
+    # Computer-Filter
+    $lblComp = New-Label "Computer:" 750 12 68 20
+    $lblComp.Anchor = $ancR
+    $pnlFilter.Controls.Add($lblComp)
     $cbCompFilter = New-Object System.Windows.Forms.ComboBox
     $cbCompFilter.Location      = New-Object System.Drawing.Point(820, 10)
     $cbCompFilter.Size          = New-Object System.Drawing.Size(130, 22)
+    $cbCompFilter.Anchor        = $ancR
     $cbCompFilter.DropDownStyle = "DropDownList"
     $cbCompFilter.Font          = $fontNormal
     $cbCompFilter.Items.Add("Alle") | Out-Null
@@ -2866,8 +2908,9 @@ $($diag -join "`n")
     $cbCompFilter.SelectedIndex = 0
     $pnlFilter.Controls.Add($cbCompFilter)
 
-    # Ergebnis-Zähler
+    # Ergebnis-Zähler (ganz rechts)
     $lblCount = New-Label "" 960 12 145 20 $false $true
+    $lblCount.Anchor = $ancR
     $pnlFilter.Controls.Add($lblCount)
 
     # ── Zeile 2: Aktions-Buttons ─────────────────────────────────
@@ -2886,6 +2929,10 @@ $($diag -join "`n")
     $dgv = New-Object System.Windows.Forms.DataGridView
     $dgv.Location              = New-Object System.Drawing.Point(10, 142)
     $dgv.Size                  = New-Object System.Drawing.Size(1115, 472)
+    $dgv.Anchor                = [System.Windows.Forms.AnchorStyles]::Top    -bor
+                                 [System.Windows.Forms.AnchorStyles]::Bottom -bor
+                                 [System.Windows.Forms.AnchorStyles]::Left   -bor
+                                 [System.Windows.Forms.AnchorStyles]::Right
     $dgv.BackgroundColor       = $clrPanel
     $dgv.GridColor             = $clrBorder
     $dgv.BorderStyle           = "None"
@@ -3006,6 +3053,9 @@ $($diag -join "`n")
     $lblDetail = New-Object System.Windows.Forms.Label
     $lblDetail.Location  = New-Object System.Drawing.Point(10, 620)
     $lblDetail.Size      = New-Object System.Drawing.Size(1115, 40)
+    $lblDetail.Anchor    = [System.Windows.Forms.AnchorStyles]::Bottom -bor
+                           [System.Windows.Forms.AnchorStyles]::Left   -bor
+                           [System.Windows.Forms.AnchorStyles]::Right
     $lblDetail.Font      = $fontSmall
     $lblDetail.ForeColor = $clrMuted
     $lblDetail.Text      = "Zeile anklicken für vollständige Nachricht"
