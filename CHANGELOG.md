@@ -6,6 +6,7 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 
 | Version | Datum      | Beschreibung                                                                     |
 |---------|------------|----------------------------------------------------------------------------------|
+| 1.2.13  | 2026-05-13 | Fix: op_Multiply-Fehler (AnchorStyles Integer-Literale, Ceiling→int, Closure inline); Scanconfig vor erstem Abfragen |
 | 1.2.12  | 2026-05-13 | Filter-Zeile überschneidungsfrei (Resize-Handler); Beschreibung-Spalte entfernt; horizontale Scrollbar |
 | 1.2.11  | 2026-05-13 | Layout: Scan-Einstellungen überlappungsfrei; Ausgabefenster flexibel (Anchor)    |
 | 1.2.10  | 2026-05-13 | Fix: Scan-Einstellungen werden automatisch vor dem Scan angeboten                |
@@ -234,3 +235,4 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 - [2026-05-13 17:23:27] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-13 17:23:54] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-13 17:24:19] Bearbeitet: WindowsEventAnalyzer.ps1
+- [2026-05-13 17:24:52] Bearbeitet: CHANGELOG.md
