@@ -1,6 +1,6 @@
 ﻿# ============================================================
 #  Windows Event Analyzer – Interaktives Abfrage-Tool
-#  Version  : 1.2.12
+#  Version  : 1.2.13
 #  Datum    : 2026-05-13
 #  Autor    : FrankBKW
 #  Anforderungen: Windows PowerShell 5.1 oder PowerShell 7+
@@ -81,7 +81,7 @@ function Resolve-EventUser {
 }
 
 # ── Versions-Info ────────────────────────────────────────────
-$script:AppVersion   = "1.2.12"
+$script:AppVersion   = "1.2.13"
 $script:AppBuildDate = "2026-05-13"
 $script:AppTitle     = "Windows Event Analyzer"
 
@@ -111,6 +111,8 @@ foreach ($grp in $script:scanLogDefs.Keys) {
 
 # Scantiefe: 0 = alle Events, >0 = MaxEvents pro Log
 $script:scanDepth = 0
+# Flag: wurde Scanconfig vor der ersten Abfrage bereits angezeigt?
+$script:scanConfigShown = $false
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
@@ -575,7 +577,7 @@ function Show-ScanSettings {
     $startY = 38
 
     $groups = @($script:scanLogDefs.Keys)
-    $numRows = [Math]::Ceiling($groups.Count / 2)
+    $numRows = [int][Math]::Ceiling($groups.Count / 2)
     $chkBtm  = $startY + $numRows * $rowH   # unteres Ende Checkboxbereich
 
     $sepY    = $chkBtm + 10
@@ -1347,7 +1349,7 @@ $btnScanCfg.Font      = New-Object System.Drawing.Font("Segoe UI", 11)
 $btnScanCfg.FlatAppearance.BorderSize  = 1
 $btnScanCfg.BackColor = [System.Drawing.Color]::FromArgb(230, 230, 245)
 $btnScanCfg.ForeColor = [System.Drawing.Color]::FromArgb(74, 74, 170)
-$btnScanCfg.Add_Click({ Show-ScanSettings })
+$btnScanCfg.Add_Click({ Show-ScanSettings; $script:scanConfigShown = $true })
 $pnlOptions.Controls.Add($btnScanCfg)
 
 $chkManifest = New-Object System.Windows.Forms.CheckBox
@@ -2280,9 +2282,7 @@ $btnXPath.Add_Click({
 
             $pnlXF2 = New-Object System.Windows.Forms.Panel
             $pnlXF2.Location = New-Object System.Drawing.Point(10,64); $pnlXF2.Size = New-Object System.Drawing.Size(1115,72)
-            $pnlXF2.Anchor   = [System.Windows.Forms.AnchorStyles]::Top  -bor
-                               [System.Windows.Forms.AnchorStyles]::Left -bor
-                               [System.Windows.Forms.AnchorStyles]::Right
+            $pnlXF2.Anchor   = 13   # Top(1)+Left(4)+Right(8)
             $pnlXF2.BackColor = $clrPanel
             $pnlXF2.Add_Paint({ param($s,$e); $e.Graphics.DrawRectangle((New-Object System.Drawing.Pen($clrBorder,1)),0,0,$s.Width-1,$s.Height-1) })
 
@@ -2314,10 +2314,7 @@ $btnXPath.Add_Click({
             # DGV
             $xdgv = New-Object System.Windows.Forms.DataGridView
             $xdgv.Location = New-Object System.Drawing.Point(10,142); $xdgv.Size = New-Object System.Drawing.Size(1115,472)
-            $xdgv.Anchor   = [System.Windows.Forms.AnchorStyles]::Top    -bor
-                             [System.Windows.Forms.AnchorStyles]::Bottom -bor
-                             [System.Windows.Forms.AnchorStyles]::Left   -bor
-                             [System.Windows.Forms.AnchorStyles]::Right
+            $xdgv.Anchor   = 15   # Top(1)+Bottom(2)+Left(4)+Right(8) = All
             $xdgv.BackgroundColor = $clrPanel; $xdgv.GridColor = $clrBorder; $xdgv.BorderStyle = "None"
             $xdgv.Font = $fontSmall; $xdgv.DefaultCellStyle.Font = $fontSmall
             $xdgv.DefaultCellStyle.ForeColor = $clrText; $xdgv.DefaultCellStyle.BackColor = $clrPanel
@@ -2377,9 +2374,7 @@ $btnXPath.Add_Click({
             $lblXDetail = New-Object System.Windows.Forms.Label
             $lblXDetail.Location  = New-Object System.Drawing.Point(10, 622)
             $lblXDetail.Size      = New-Object System.Drawing.Size(1115, 40)
-            $lblXDetail.Anchor    = [System.Windows.Forms.AnchorStyles]::Bottom -bor
-                                    [System.Windows.Forms.AnchorStyles]::Left   -bor
-                                    [System.Windows.Forms.AnchorStyles]::Right
+            $lblXDetail.Anchor    = 14   # Bottom(2)+Left(4)+Right(8)
             $lblXDetail.Font      = $fontSmall
             $lblXDetail.ForeColor = $clrMuted
             $lblXDetail.Text      = "Zeile anklicken für vollständige Nachricht  |  Doppelklick für alle Details"
@@ -2563,6 +2558,13 @@ $formMain.Controls.Add($pbQuery)
 #  ABFRAGE-LOGIK
 # ════════════════════════════════════════════════════════════
 $btnAbfragen.Add_Click({
+    # Beim ersten Klick Scan-Einstellungen anbieten
+    if (-not $script:scanConfigShown) {
+        $cfgResult = Show-ScanSettings
+        $script:scanConfigShown = $true
+        if ($cfgResult -eq "Cancel") { return }
+    }
+
     # Ausgewaehlte Events per Index direkt aus der Mapping-Liste holen
     $checkedIDs = @()
     for ($i = 0; $i -lt $clbEvents.Items.Count; $i++) {
@@ -2819,9 +2821,7 @@ $($diag -join "`n")
     $pnlFilter = New-Object System.Windows.Forms.Panel
     $pnlFilter.Location  = New-Object System.Drawing.Point(10, 64)
     $pnlFilter.Size      = New-Object System.Drawing.Size(1115, 72)
-    $pnlFilter.Anchor    = [System.Windows.Forms.AnchorStyles]::Top -bor
-                           [System.Windows.Forms.AnchorStyles]::Left -bor
-                           [System.Windows.Forms.AnchorStyles]::Right
+    $pnlFilter.Anchor    = 13   # Top(1)+Left(4)+Right(8)
     $pnlFilter.BackColor = $clrPanel
     $pnlFilter.BorderStyle = "None"
     $formOut.Controls.Add($pnlFilter)
@@ -2895,7 +2895,7 @@ $($diag -join "`n")
     $pnlFilter.Controls.Add($lblCount)
 
     # Resize-Handler: positioniert rechte Controls von rechts nach links
-    $filterLayoutScript = {
+    $pnlFilter.Add_Resize({
         $W = $pnlFilter.ClientSize.Width
         $gap = 6; $pad = 8; $y = 10; $yL = 13
         $x = $W - $pad - 110
@@ -2914,10 +2914,27 @@ $($diag -join "`n")
         $lblTyp.Location       = New-Object System.Drawing.Point($x, $yL)
         # Suchfeld bis zur ersten rechten Gruppe (mit 10px Puffer)
         $txtFilter.Width       = [Math]::Max(80, $x - 68 - 10)
-    }
-    $pnlFilter.Add_Resize($filterLayoutScript)
-    # Einmalig nach dem Laden ausführen
-    $formOut.Add_Shown({ & $filterLayoutScript })
+    })
+    # Einmalig nach dem Laden ausführen (direkt inline, kein & $var-Indirektion)
+    $formOut.Add_Shown({
+        $W = $pnlFilter.ClientSize.Width
+        $gap = 6; $pad = 8; $y = 10; $yL = 13
+        $x = $W - $pad - 110
+        $lblCount.Location     = New-Object System.Drawing.Point($x, $yL)
+        $x -= 130 + $gap
+        $cbCompFilter.Location = New-Object System.Drawing.Point($x, $y)
+        $x -= 66 + $gap
+        $lblComp.Location      = New-Object System.Drawing.Point($x, $yL)
+        $x -= 110 + $gap
+        $cbLogFilter.Location  = New-Object System.Drawing.Point($x, $y)
+        $x -= 66 + $gap
+        $lblProt.Location      = New-Object System.Drawing.Point($x, $yL)
+        $x -= 110 + $gap
+        $cbTypFilter.Location  = New-Object System.Drawing.Point($x, $y)
+        $x -= 32 + $gap
+        $lblTyp.Location       = New-Object System.Drawing.Point($x, $yL)
+        $txtFilter.Width       = [Math]::Max(80, $x - 68 - 10)
+    })
 
     # ── Zeile 2: Aktions-Buttons ─────────────────────────────────
     $btnExport      = New-StyledButton "CSV-Export"   8   44 100 24 $false
@@ -2935,10 +2952,7 @@ $($diag -join "`n")
     $dgv = New-Object System.Windows.Forms.DataGridView
     $dgv.Location              = New-Object System.Drawing.Point(10, 142)
     $dgv.Size                  = New-Object System.Drawing.Size(1115, 472)
-    $dgv.Anchor                = [System.Windows.Forms.AnchorStyles]::Top    -bor
-                                 [System.Windows.Forms.AnchorStyles]::Bottom -bor
-                                 [System.Windows.Forms.AnchorStyles]::Left   -bor
-                                 [System.Windows.Forms.AnchorStyles]::Right
+    $dgv.Anchor                = 15   # Top(1)+Bottom(2)+Left(4)+Right(8) = All
     $dgv.BackgroundColor       = $clrPanel
     $dgv.GridColor             = $clrBorder
     $dgv.BorderStyle           = "None"
@@ -3057,9 +3071,7 @@ $($diag -join "`n")
     $lblDetail = New-Object System.Windows.Forms.Label
     $lblDetail.Location  = New-Object System.Drawing.Point(10, 620)
     $lblDetail.Size      = New-Object System.Drawing.Size(1115, 40)
-    $lblDetail.Anchor    = [System.Windows.Forms.AnchorStyles]::Bottom -bor
-                           [System.Windows.Forms.AnchorStyles]::Left   -bor
-                           [System.Windows.Forms.AnchorStyles]::Right
+    $lblDetail.Anchor    = 14   # Bottom(2)+Left(4)+Right(8)
     $lblDetail.Font      = $fontSmall
     $lblDetail.ForeColor = $clrMuted
     $lblDetail.Text      = "Zeile anklicken für vollständige Nachricht"
