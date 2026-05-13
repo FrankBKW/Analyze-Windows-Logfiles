@@ -1,5 +1,8 @@
 ﻿# ============================================================
 #  Windows Event Analyzer – Interaktives Abfrage-Tool
+#  Version  : 1.2.5
+#  Datum    : 2026-05-13
+#  Autor    : FrankBKW
 #  Anforderungen: Windows PowerShell 5.1 oder PowerShell 7+
 #  Als Administrator ausführen für vollständigen Log-Zugriff
 # ============================================================
@@ -60,6 +63,11 @@ if (-not $_principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administr
     exit
 }
 Remove-Variable _principal
+
+# ── Versions-Info ────────────────────────────────────────────
+$script:AppVersion   = "1.2.5"
+$script:AppBuildDate = "2026-05-13"
+$script:AppTitle     = "Windows Event Analyzer"
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
@@ -1059,7 +1067,7 @@ if ($dlgScan -eq [System.Windows.Forms.DialogResult]::Yes) {
 #  FORMULAR 1 – Auswahl
 # ════════════════════════════════════════════════════════════
 $formMain = New-Object System.Windows.Forms.Form
-$formMain.Text            = "Windows Event Viewer – Abfrage-Tool"
+$formMain.Text            = "Windows Event Analyzer v$($script:AppVersion) – Abfrage-Tool"
 $formMain.Size            = New-Object System.Drawing.Size(920, 862)
 $formMain.StartPosition   = "CenterScreen"
 $formMain.BackColor       = $clrBg
@@ -1078,12 +1086,21 @@ $pnlTitle.BackColor = $clrAccent
 $formMain.Controls.Add($pnlTitle)
 
 $lblTitle = New-Object System.Windows.Forms.Label
-$lblTitle.Text      = "  Windows Event Abfrage-Tool"
+$lblTitle.Text      = "  $($script:AppTitle)"
 $lblTitle.Dock      = "Fill"
 $lblTitle.Font      = $fontTitle
 $lblTitle.ForeColor = [System.Drawing.Color]::White
 $lblTitle.TextAlign = "MiddleLeft"
 $pnlTitle.Controls.Add($lblTitle)
+
+$lblVersion = New-Object System.Windows.Forms.Label
+$lblVersion.Text      = "v$($script:AppVersion)  "
+$lblVersion.Dock      = "Right"
+$lblVersion.Width     = 70
+$lblVersion.Font      = New-Object System.Drawing.Font("Segoe UI", 8)
+$lblVersion.ForeColor = [System.Drawing.Color]::FromArgb(180, 200, 255)
+$lblVersion.TextAlign = "MiddleRight"
+$pnlTitle.Controls.Add($lblVersion)
 
 $lblSubtitle = New-Object System.Windows.Forms.Label
 $lblSubtitle.Text      = "   Mehrfachauswahl möglich – Strg+Klick oder Checkboxen nutzen"
@@ -2535,7 +2552,7 @@ $($diag -join "`n")
     #  FORMULAR 2 – Ausgabe
     # ════════════════════════════════════════════════════════
     $formOut = New-Object System.Windows.Forms.Form
-    $formOut.Text           = "Event-Ergebnisse  –  $($sorted.Count) Einträge  |  $zeitText  |  $computerLabel"
+    $formOut.Text           = "$($script:AppTitle) v$($script:AppVersion)  –  $($sorted.Count) Einträge  |  $zeitText  |  $computerLabel"
     $formOut.Size           = New-Object System.Drawing.Size(1150, 720)
     $formOut.StartPosition  = "CenterScreen"
     $formOut.BackColor      = $clrBg
@@ -2557,6 +2574,15 @@ $($diag -join "`n")
     $lblOutTitle.Dock      = "Fill"
     $lblOutTitle.TextAlign = "MiddleLeft"
     $pnlOutTitle.Controls.Add($lblOutTitle)
+
+    $lblOutVer = New-Object System.Windows.Forms.Label
+    $lblOutVer.Text      = "v$($script:AppVersion)  "
+    $lblOutVer.Dock      = "Right"
+    $lblOutVer.Width     = 70
+    $lblOutVer.Font      = New-Object System.Drawing.Font("Segoe UI", 8)
+    $lblOutVer.ForeColor = [System.Drawing.Color]::FromArgb(180, 200, 255)
+    $lblOutVer.TextAlign = "MiddleRight"
+    $pnlOutTitle.Controls.Add($lblOutVer)
 
     $lblOutSub = New-Object System.Windows.Forms.Label
     $lblOutSub.Text      = "   $($sorted.Count) Einträge  ·  $zeitText  ·  Computer: $computerLabel"

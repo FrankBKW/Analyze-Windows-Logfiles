@@ -1,6 +1,19 @@
 # Windows Event Analyzer
 
+![Version](https://img.shields.io/badge/Version-1.2.5-blue)
+![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue)
+![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey)
+![License](https://img.shields.io/badge/Lizenz-Privat%20%2F%20IT--intern-orange)
+
 Interaktives PowerShell-GUI-Tool zum Abfragen, Filtern und Auswerten von Windows-Ereignisprotokollen – lokal und auf Remote-Computern.
+
+| Eigenschaft   | Wert                        |
+|---------------|-----------------------------|
+| **Version**   | 1.2.5                       |
+| **Datum**     | 2026-05-13                  |
+| **Autor**     | FrankBKW                    |
+| **Plattform** | Windows 10/11, Server 2016+ |
+| **Sprache**   | PowerShell 5.1 / 7+         |
 
 ---
 
@@ -553,6 +566,21 @@ Beispielinhalt einer Profil-Datei:
 4. Kategorie → `Kritisch`
 5. Zeitraum → `Letzte 7 Tage`
 6. **🔎 Abfragen** → im Ergebnis über **Computer**-Filter je Server filtern
+
+---
+
+## Versionshistorie
+
+| Version | Datum      | Highlights                                                                 |
+|---------|------------|----------------------------------------------------------------------------|
+| 1.2.5   | 2026-05-13 | Versionsnummer in Fenstern & EXE-Eigenschaften; Beschreibung aus erstem Zeile der echten Event-Nachricht |
+| 1.2.4   | 2026-05-13 | Fix: Beschreibung ≠ Nachricht (falscher Split auf `$short`); Fenster nicht mehr dauerhaft TopMost |
+| 1.2.3   | 2026-05-13 | Fix: Beschreibung immer aus echter Event-Nachricht, nicht aus statischem Katalog |
+| 1.2.2   | 2026-05-12 | Fix: Nachricht nicht mehr auf 300 Zeichen abgeschnitten                    |
+| 1.2.1   | 2026-05-12 | Fix: Beschreibung im Live-Modus zeigte `[Provider:...]`-Metadaten          |
+| 1.2.0   | 2026-05-12 | Major: Auto-Elevation PS1, alle Popups TopMost, Security-Review in README  |
+| 1.1.x   | 2026-05-09 | Remote-Zugriff, XPath-Abfrage, Profil-System, Live-Modus, Diagramm        |
+| 1.0.0   | 2026-05-09 | Erstveröffentlichung                                                       |
 
 ---
 

@@ -1,5 +1,6 @@
 # Generation Prompt – Windows Event Analyzer
 
+> **Stand:** v1.2.5 · 2026-05-13  
 > Dieser Prompt beschreibt das Skript vollständig und präzise genug,  
 > um es neu zu erzeugen. Sprache: Deutsch/English gemischt (wie Original).
 
@@ -18,7 +19,25 @@ kompiliert werden.
 
 ## Anforderungen im Detail
 
-### 1. Auto-Elevation
+### 1. Versions-Konstante & Kopfzeile
+
+Am Anfang des Skripts steht ein Kommentar-Header mit Version, Datum und Autor:
+```
+# Version  : 1.2.x
+# Datum    : YYYY-MM-DD
+# Autor    : FrankBKW
+```
+
+Direkt nach der Auto-Elevation werden drei Skript-Scope-Variablen definiert:
+```powershell
+$script:AppVersion   = "1.2.x"
+$script:AppBuildDate = "YYYY-MM-DD"
+$script:AppTitle     = "Windows Event Analyzer"
+```
+
+Diese Konstanten werden in Fenstertiteln, Titelleisten-Labels und EXE-Metadaten verwendet.
+
+### 2. Auto-Elevation
 
 Das Skript muss sich beim Start **automatisch als Administrator neu starten**, falls es ohne
 Adminrechte ausgeführt wird:
@@ -128,8 +147,14 @@ Beim Start:
 
 ### 7. Formular 1 – Auswahl-Maske
 
-**Fenstergröße:** 920 × 862 px, FixedSingle, kein Maximize.
+**Fenstergröße:** 920 × 862 px, FixedSingle, kein Maximize.  
+**Titel (Taskleiste):** `"Windows Event Analyzer v$($script:AppVersion) – Abfrage-Tool"`  
 **TopMost = $true** nur initial; nach `Add_Shown` → `TopMost = $false; Activate()`.
+
+**Titelleiste (blaues Panel):**
+- Links: `$script:AppTitle` (Segoe UI 12 Bold, weiß)
+- Rechts: `"v$($script:AppVersion)"` (Segoe UI 8, hellblau, rechtsbündig, Dock=Right, Width=70)
+- Unten: Hilfetext zur Mehrfachauswahl (Dock=Bottom)
 
 #### Sektion „Abfrage-Optionen" (SectionPanel, y=75):
 
