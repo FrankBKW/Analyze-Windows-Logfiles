@@ -73,13 +73,10 @@ function Resolve-EventUser {
     } catch {
         # SID nicht auflösbar (z.B. gelöschtes Konto, kein DC erreichbar) → rohe SID zeigen
         $sid = $WinEvent.UserId.Value
-        # Bekannte System-SIDs lesbar machen
-        return switch ($sid) {
-            "S-1-5-18"  { "SYSTEM" }
-            "S-1-5-19"  { "LOCAL SERVICE" }
-            "S-1-5-20"  { "NETWORK SERVICE" }
-            default     { $sid }
-        }
+        if ($sid -eq "S-1-5-18") { return "SYSTEM" }
+        if ($sid -eq "S-1-5-19") { return "LOCAL SERVICE" }
+        if ($sid -eq "S-1-5-20") { return "NETWORK SERVICE" }
+        return $sid
     }
 }
 
