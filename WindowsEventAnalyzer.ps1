@@ -1,6 +1,6 @@
 ﻿# ============================================================
 #  Windows Event Analyzer – Interaktives Abfrage-Tool
-#  Version  : 1.2.14
+#  Version  : 1.2.15
 #  Datum    : 2026-05-13
 #  Autor    : FrankBKW
 #  Anforderungen: Windows PowerShell 5.1 oder PowerShell 7+
@@ -81,7 +81,7 @@ function Resolve-EventUser {
 }
 
 # ── Versions-Info ────────────────────────────────────────────
-$script:AppVersion   = "1.2.14"
+$script:AppVersion   = "1.2.15"
 $script:AppBuildDate = "2026-05-13"
 $script:AppTitle     = "Windows Event Analyzer"
 
@@ -567,26 +567,30 @@ function Invoke-ComputerEventScan {
 }
 
 function Show-ScanSettings {
-    # ── Layout-Konstanten (von oben berechnet, kein ClientSize-Hack) ──
-    $padL   = 14
-    $frmW   = 430    # Fenster-Breite (Client)
-    $col1X  = $padL
-    $col2X  = 222    # zweite Spalte
-    $colW   = 190    # Breite jeder Checkbox
-    $rowH   = 28
-    $startY = 38
+    # ── Layout-Konstanten: alle Multiplikationen durch Addition ersetzt ──
+    [int]$padL   = 14
+    [int]$frmW   = 430    # Fenster-Breite (Client)
+    [int]$col1X  = 14     # = $padL
+    [int]$col2X  = 222    # zweite Spalte
+    [int]$colW   = 190    # Breite jeder Checkbox
+    [int]$rowH   = 28
+    [int]$startY = 38
+    [int]$innerW = 402    # = $frmW - $padL - $padL (kein * !)
 
-    $groups = @($script:scanLogDefs.Keys)
-    $numRows = [int][Math]::Ceiling($groups.Count / 2)
-    $chkBtm  = $startY + $numRows * $rowH   # unteres Ende Checkboxbereich
+    $groups  = @($script:scanLogDefs.Keys)
+    [int]$numRows = [int][Math]::Ceiling([double]$groups.Count / 2.0)
 
-    $sepY    = $chkBtm + 10
-    $depthY  = $sepY + 14
-    $hintY   = $depthY + 26
-    $hintBtm = $hintY + 18
-    $btnH    = 28
-    $btnY    = $hintBtm + 14
-    $cliH    = $btnY + $btnH + 14          # ClientSize.Height
+    # $chkBtm = $startY + $numRows * $rowH  →  durch Schleife ersetzt
+    [int]$chkBtm = $startY
+    for ([int]$r = 0; $r -lt $numRows; $r++) { $chkBtm += $rowH }
+
+    [int]$sepY    = $chkBtm + 10
+    [int]$depthY  = $sepY + 14
+    [int]$hintY   = $depthY + 26
+    [int]$hintBtm = $hintY + 18
+    [int]$btnH    = 28
+    [int]$btnY    = $hintBtm + 14
+    [int]$cliH    = $btnY + $btnH + 14    # ClientSize.Height
 
     $dlg = New-Object System.Windows.Forms.Form
     $dlg.Text            = "Scan-Einstellungen"
@@ -604,16 +608,18 @@ function Show-ScanSettings {
     $lblLogs = New-Object System.Windows.Forms.Label
     $lblLogs.Text      = "Zu scannende Log-Gruppen:"
     $lblLogs.Location  = New-Object System.Drawing.Point($padL, 12)
-    $lblLogs.Size      = New-Object System.Drawing.Size($frmW - $padL * 2, 20)
+    $lblLogs.Size      = New-Object System.Drawing.Size($innerW, 20)
     $lblLogs.Font      = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Bold)
     $dlg.Controls.Add($lblLogs)
 
     # ── Checkboxen in 2 Spalten ────────────────────────────────────
     $chkMap = @{}
-    for ($i = 0; $i -lt $groups.Count; $i++) {
-        $grp = $groups[$i]
-        $col = if ($i % 2 -eq 0) { $col1X } else { $col2X }
-        $y   = $startY + [int]($i / 2) * $rowH
+    [int]$yRow = $startY   # laufende Y-Position ohne Multiplikation
+    for ([int]$i = 0; $i -lt $groups.Count; $i++) {
+        $grp = [string]$groups[$i]
+        [int]$col = if ($i % 2 -eq 0) { $col1X } else { $col2X }
+        if ($i -gt 0 -and $i % 2 -eq 0) { $yRow += $rowH }
+        [int]$y = $yRow
 
         $chk = New-Object System.Windows.Forms.CheckBox
         $chk.Text     = $grp
@@ -628,7 +634,7 @@ function Show-ScanSettings {
     $sep = New-Object System.Windows.Forms.Label
     $sep.BorderStyle = "Fixed3D"
     $sep.Location    = New-Object System.Drawing.Point($padL, $sepY)
-    $sep.Size        = New-Object System.Drawing.Size($frmW - $padL * 2, 2)
+    $sep.Size        = New-Object System.Drawing.Size($innerW, 2)
     $dlg.Controls.Add($sep)
 
     # ── Scantiefe ──────────────────────────────────────────────────
@@ -647,7 +653,7 @@ function Show-ScanSettings {
     $lblHint = New-Object System.Windows.Forms.Label
     $lblHint.Text      = "0 = alle Events ohne Limit"
     $lblHint.Location  = New-Object System.Drawing.Point($padL, $hintY)
-    $lblHint.Size      = New-Object System.Drawing.Size($frmW - $padL * 2, 16)
+    $lblHint.Size      = New-Object System.Drawing.Size($innerW, 16)
     $lblHint.Font      = New-Object System.Drawing.Font("Segoe UI", 8)
     $lblHint.ForeColor = [System.Drawing.Color]::FromArgb(110, 110, 140)
     $dlg.Controls.Add($lblHint)
