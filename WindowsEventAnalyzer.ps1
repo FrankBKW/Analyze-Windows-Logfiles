@@ -1,6 +1,6 @@
 ﻿# ============================================================
 #  Windows Event Analyzer – Interaktives Abfrage-Tool
-#  Version  : 1.2.13
+#  Version  : 1.2.14
 #  Datum    : 2026-05-13
 #  Autor    : FrankBKW
 #  Anforderungen: Windows PowerShell 5.1 oder PowerShell 7+
@@ -81,7 +81,7 @@ function Resolve-EventUser {
 }
 
 # ── Versions-Info ────────────────────────────────────────────
-$script:AppVersion   = "1.2.13"
+$script:AppVersion   = "1.2.14"
 $script:AppBuildDate = "2026-05-13"
 $script:AppTitle     = "Windows Event Analyzer"
 
@@ -1194,6 +1194,11 @@ function New-SectionPanel($x, $y, $w, $h, $title) {
 # ════════════════════════════════════════════════════════════
 $script:startupScanResult = $null
 $startupComputer = $env:COMPUTERNAME
+
+# Scan-Einstellungen vor der ersten Abfrage anzeigen
+$cfgResult = Show-ScanSettings
+$script:scanConfigShown = $true
+if ($cfgResult -eq "Cancel") { exit }
 
 # Temporäres TopMost-Fenster als Owner – stellt sicher dass der Dialog im Vordergrund erscheint
 $_tmpOwner = New-Object System.Windows.Forms.Form
