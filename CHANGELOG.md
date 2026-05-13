@@ -2,6 +2,19 @@
 
 Alle Änderungen werden automatisch von Claude Code eingetragen.
 
+## Release-Übersicht
+
+| Version | Datum      | Beschreibung                                                                     |
+|---------|------------|----------------------------------------------------------------------------------|
+| 1.2.5   | 2026-05-13 | Versionsnummer in Fenstertitel, Titelleiste und EXE-Eigenschaften                |
+| 1.2.4   | 2026-05-13 | Fix: Beschreibung ≠ Nachricht; Fenster nicht mehr dauerhaft TopMost              |
+| 1.2.3   | 2026-05-13 | Fix: Beschreibung aus echter Event-Nachricht statt statischem Katalog            |
+| 1.2.2   | 2026-05-12 | Fix: Nachricht nicht mehr auf 300 Zeichen abgeschnitten                          |
+| 1.2.1   | 2026-05-12 | Fix: Beschreibung im Live-Modus zeigte `[Provider:...]`-Metadaten               |
+| 1.2.0   | 2026-05-12 | Auto-Elevation PS1, alle Popups TopMost, Security-Review                         |
+| 1.1.x   | 2026-05-09 | Remote-Zugriff, XPath, Profile, Live-Modus, Diagramm, Diagnose                  |
+| 1.0.0   | 2026-05-09 | Erstveröffentlichung                                                             |
+
 ## Einträge
 
 - [2026-05-09 09:49:56] Bearbeitet: WindowsEventAnalyzer.ps1
@@ -130,3 +143,4 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 - [2026-05-13 06:17:09] Bearbeitet: GENERATION_PROMPT.md
 - [2026-05-13 06:17:40] Bearbeitet: GENERATION_PROMPT.md
 - [2026-05-13 06:18:05] Bearbeitet: GENERATION_PROMPT.md
+- [2026-05-13 06:18:43] Bearbeitet: CHANGELOG.md
