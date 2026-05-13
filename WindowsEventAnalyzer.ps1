@@ -1,6 +1,6 @@
 ﻿# ============================================================
 #  Windows Event Analyzer – Interaktives Abfrage-Tool
-#  Version  : 1.2.6
+#  Version  : 1.2.7
 #  Datum    : 2026-05-13
 #  Autor    : FrankBKW
 #  Anforderungen: Windows PowerShell 5.1 oder PowerShell 7+
@@ -81,7 +81,7 @@ function Resolve-EventUser {
 }
 
 # ── Versions-Info ────────────────────────────────────────────
-$script:AppVersion   = "1.2.6"
+$script:AppVersion   = "1.2.7"
 $script:AppBuildDate = "2026-05-13"
 $script:AppTitle     = "Windows Event Analyzer"
 
@@ -408,7 +408,7 @@ function Invoke-ComputerEventScan {
     param(
         [string]$Computer,
         $ProgressUI,
-        [int]$MaxPerLog  = 15,    # Klein halten: nur ID-Erkennung, kein Content nötig
+        [int]$MaxPerLog  = 50,    # Events pro Log für ID-Erkennung (mehr = mehr IDs gefunden)
         [int]$MaxLogs    = 120,   # Top-N aktivste Logs – der Rest bringt kaum neue IDs
         [System.Management.Automation.PSCredential]$Credential = $null
     )
@@ -1054,7 +1054,7 @@ if ($dlgScan -eq [System.Windows.Forms.DialogResult]::Yes) {
 
         # Phase 1: Schnell-Scan – kleine Samples, kein Message-Lookup, kein Manifest-Scan
         $discovered = Invoke-ComputerEventScan -Computer $startupComputer -ProgressUI $progUI `
-                          -MaxPerLog 15 -MaxLogs 120
+                          -MaxPerLog 50 -MaxLogs 120
         $addedCount = Merge-DiscoveredEvents -Discovered $discovered
         $logsCount  = $script:discoveredLogs.Count
 
@@ -1654,7 +1654,7 @@ $btnRescan.Add_Click({
 
         # Phase 1: Schnell-Scan (immer)
         $disc  = Invoke-ComputerEventScan -Computer $target -ProgressUI $progUI2 `
-                     -MaxPerLog 15 -MaxLogs 120 -Credential $cred
+                     -MaxPerLog 50 -MaxLogs 120 -Credential $cred
         $added = Merge-DiscoveredEvents -Discovered $disc
 
         # Phase 2: Manifest-Scan (nur wenn Checkbox aktiv)
