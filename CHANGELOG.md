@@ -145,3 +145,4 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 - [2026-05-13 06:18:05] Bearbeitet: GENERATION_PROMPT.md
 - [2026-05-13 06:18:43] Bearbeitet: CHANGELOG.md
 - [2026-05-13 08:07:25] Bearbeitet: WindowsEventAnalyzer.ps1
+- [2026-05-13 08:07:53] Bearbeitet: WindowsEventAnalyzer.ps1
