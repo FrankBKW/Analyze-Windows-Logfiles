@@ -6,6 +6,7 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 
 | Version | Datum      | Beschreibung                                                                     |
 |---------|------------|----------------------------------------------------------------------------------|
+| 1.2.15  | 2026-05-13 | Fix: op_Multiply endgültig behoben – alle * durch Addition/[int]-Typen ersetzt   |
 | 1.2.14  | 2026-05-13 | Fix: Scanconfig erscheint beim Start vor der Scan/Überspringen-Auswahl           |
 | 1.2.13  | 2026-05-13 | Fix: op_Multiply-Fehler (AnchorStyles Integer-Literale, Ceiling→int, Closure inline); Scanconfig vor erstem Abfragen |
 | 1.2.12  | 2026-05-13 | Filter-Zeile überschneidungsfrei (Resize-Handler); Beschreibung-Spalte entfernt; horizontale Scrollbar |
@@ -254,3 +255,4 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 - [2026-05-13 18:02:41] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-13 18:03:13] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-13 18:03:36] Bearbeitet: WindowsEventAnalyzer.ps1
+- [2026-05-13 18:04:02] Bearbeitet: CHANGELOG.md
