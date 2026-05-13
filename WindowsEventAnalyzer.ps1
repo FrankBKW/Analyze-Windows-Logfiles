@@ -504,6 +504,7 @@ function Show-CopyableDialog {
     $dlg.BackColor       = [System.Drawing.Color]::FromArgb(245,245,250)
     $dlg.Font            = New-Object System.Drawing.Font("Segoe UI", 9)
     $dlg.TopMost         = $true
+    $dlg.Add_Shown({ $dlg.TopMost = $false; $dlg.Activate() })
 
     $pnlTop = New-Object System.Windows.Forms.Panel
     $pnlTop.Dock = "Top"; $pnlTop.Height = 42
@@ -1930,6 +1931,7 @@ $btnXPath.Add_Click({
     $fxp.BackColor       = $clrBg
     $fxp.Font            = $fontNormal
     $fxp.TopMost         = $true
+    $fxp.Add_Shown({ $fxp.TopMost = $false; $fxp.Activate() })
 
     $pnlXH = New-Object System.Windows.Forms.Panel
     $pnlXH.Dock = "Top"; $pnlXH.Height = 48; $pnlXH.BackColor = $clrAccent
@@ -2017,7 +2019,7 @@ $btnXPath.Add_Click({
                 }
                 # Katalog-Lookup: Kategorie aus kuratierter Liste
                 $meta = $eventCatalog | Where-Object { $_.ID -eq $r.Id -and $_.Log -eq $xLog } | Select-Object -First 1
-                $firstLineX = ($short -split '[\r\n]' | Where-Object { $_.Trim() -ne "" } | Select-Object -First 1)
+                $firstLineX = ($msg -split '[\r\n]' | Where-Object { $_.Trim() -ne "" } | Select-Object -First 1)
                 $descValX = if ($firstLineX -and $firstLineX -ne "(keine Nachricht)") {
                     if ($firstLineX.Length -gt 120) { $firstLineX.Substring(0,120) + "…" } else { $firstLineX }
                 } elseif ($meta -and $meta.Desc -and $meta.Desc -notmatch '^\[Provider:') {
@@ -2046,6 +2048,7 @@ $btnXPath.Add_Click({
             $fxOut.Size          = New-Object System.Drawing.Size(1150, 720)
             $fxOut.StartPosition = "CenterScreen"; $fxOut.BackColor = $clrBg; $fxOut.Font = $fontNormal
             $fxOut.TopMost       = $true
+            $fxOut.Add_Shown({ $fxOut.TopMost = $false; $fxOut.Activate() })
 
             $pnlXT = New-Object System.Windows.Forms.Panel
             $pnlXT.Dock = "Top"; $pnlXT.Height = 56; $pnlXT.BackColor = $clrAccent
@@ -2246,6 +2249,7 @@ $btnXPath.Add_Click({
                 $fxChart.Size = New-Object System.Drawing.Size(950,520)
                 $fxChart.StartPosition = "CenterScreen"; $fxChart.BackColor = $clrBg; $fxChart.Font = $fontNormal
                 $fxChart.TopMost = $true
+                $fxChart.Add_Shown({ $fxChart.TopMost = $false; $fxChart.Activate() })
                 try {
                     $xChart = New-Object System.Windows.Forms.DataVisualization.Charting.Chart
                     $xChart.Dock = "Fill"; $xChart.BackColor = $clrBg
@@ -2433,7 +2437,7 @@ $btnAbfragen.Add_Click({
                         # Beschreibung: immer erste Zeile der echten Event-Nachricht verwenden –
                         # nur wenn die Nachricht leer ist, auf den Katalog-Text zurückfallen.
                         # (Katalog-Text ist pro ID fixiert und stimmt nicht immer mit dem Provider überein.)
-                        $firstLine = ($short -split '[\r\n]' | Where-Object { $_.Trim() -ne "" } | Select-Object -First 1)
+                        $firstLine = ($msg -split '[\r\n]' | Where-Object { $_.Trim() -ne "" } | Select-Object -First 1)
                         $descVal = if ($firstLine -and $firstLine -ne "(keine Nachricht)") {
                             if ($firstLine.Length -gt 120) { $firstLine.Substring(0,120) + "…" } else { $firstLine }
                         } elseif ($meta -and $meta.Desc -and $meta.Desc -notmatch '^\[Provider:') {
@@ -2537,6 +2541,7 @@ $($diag -join "`n")
     $formOut.BackColor      = $clrBg
     $formOut.Font           = $fontNormal
     $formOut.TopMost        = $true
+    $formOut.Add_Shown({ $formOut.TopMost = $false; $formOut.Activate() })
 
     # Titel
     $pnlOutTitle = New-Object System.Windows.Forms.Panel
@@ -2920,6 +2925,7 @@ $($diag -join "`n")
         $fChart.BackColor     = $clrBg
         $fChart.Font          = $fontNormal
         $fChart.TopMost       = $true
+        $fChart.Add_Shown({ $fChart.TopMost = $false; $fChart.Activate() })
 
         try {
             $chart = New-Object System.Windows.Forms.DataVisualization.Charting.Chart
@@ -3018,7 +3024,7 @@ $($diag -join "`n")
                                 "Information"   { "Information" } "Informationen" { "Information" }
                                 default         { "$($r.LevelDisplayName)" }
                             }
-                            $firstLineL = ($short -split '[\r\n]' | Where-Object { $_.Trim() -ne "" } | Select-Object -First 1)
+                            $firstLineL = ($msg -split '[\r\n]' | Where-Object { $_.Trim() -ne "" } | Select-Object -First 1)
                             $descValL = if ($firstLineL -and $firstLineL -ne "(keine Nachricht)") {
                                 if ($firstLineL.Length -gt 120) { $firstLineL.Substring(0,120) + "…" } else { $firstLineL }
                             } elseif ($meta -and $meta.Desc -and $meta.Desc -notmatch '^\[Provider:') {
