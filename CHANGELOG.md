@@ -6,6 +6,7 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 
 | Version | Datum      | Beschreibung                                                                     |
 |---------|------------|----------------------------------------------------------------------------------|
+| 1.2.10  | 2026-05-13 | Fix: Scan-Einstellungen werden automatisch vor dem Scan angeboten                |
 | 1.2.9   | 2026-05-13 | Scan-Konfiguration: Checkboxen pro Log-Gruppe + Scantiefe (0=alle)               |
 | 1.2.8   | 2026-05-13 | Scan ohne MaxEvents-Limit (alle Events pro Log)                                  |
 | 1.2.7   | 2026-05-13 | Benutzer-Spalte in allen Ergebnissen (SID → Name, Fallback auf rohe SID)         |
@@ -189,3 +190,4 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 - [2026-05-13 10:12:27] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-13 10:12:52] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-13 10:13:10] Bearbeitet: WindowsEventAnalyzer.ps1
+- [2026-05-13 10:13:31] Bearbeitet: CHANGELOG.md
