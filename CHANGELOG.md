@@ -266,3 +266,4 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 - [2026-05-13 18:24:03] Bearbeitet: CHANGELOG.md
 - [2026-05-13 18:24:28] Bearbeitet: README.md
 - [2026-05-13 18:24:53] Bearbeitet: README.md
+- [2026-05-13 18:25:18] Bearbeitet: README.md
