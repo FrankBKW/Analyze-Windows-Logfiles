@@ -1,6 +1,6 @@
 ﻿# ============================================================
 #  Windows Event Analyzer – Interaktives Abfrage-Tool
-#  Version  : 1.2.9
+#  Version  : 1.2.10
 #  Datum    : 2026-05-13
 #  Autor    : FrankBKW
 #  Anforderungen: Windows PowerShell 5.1 oder PowerShell 7+
@@ -81,7 +81,7 @@ function Resolve-EventUser {
 }
 
 # ── Versions-Info ────────────────────────────────────────────
-$script:AppVersion   = "1.2.9"
+$script:AppVersion   = "1.2.10"
 $script:AppBuildDate = "2026-05-13"
 $script:AppTitle     = "Windows Event Analyzer"
 
@@ -675,7 +675,7 @@ function Show-ScanSettings {
     $dlg.AcceptButton = $btnOK
     $dlg.CancelButton = $btnCancel
 
-    $dlg.ShowDialog() | Out-Null
+    return $dlg.ShowDialog()
 }
 
 function Show-CopyableDialog {
@@ -1810,6 +1810,10 @@ $btnNone.Add_Click({ for ($i=0; $i -lt $clbEvents.Items.Count; $i++) { $clbEvent
 
 # Re-Scan Handler
 $btnRescan.Add_Click({
+    # Einstellungen anbieten bevor der Scan startet
+    $cfgResult = Show-ScanSettings
+    if ($cfgResult -eq "Cancel") { return }
+
     $target = $txtComputer.Text.Trim()
     if ([string]::IsNullOrWhiteSpace($target)) { $target = $env:COMPUTERNAME }
     $withManifest = $chkManifest.Checked

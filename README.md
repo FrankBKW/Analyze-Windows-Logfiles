@@ -1,6 +1,6 @@
 # Windows Event Analyzer
 
-![Version](https://img.shields.io/badge/Version-1.2.9-blue)
+![Version](https://img.shields.io/badge/Version-1.2.10-blue)
 ![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue)
 ![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/Lizenz-Privat%20%2F%20IT--intern-orange)
@@ -9,7 +9,7 @@ Interaktives PowerShell-GUI-Tool zum Abfragen, Filtern und Auswerten von Windows
 
 | Eigenschaft   | Wert                        |
 |---------------|-----------------------------|
-| **Version**   | 1.2.9                       |
+| **Version**   | 1.2.10                       |
 | **Datum**     | 2026-05-13                  |
 | **Autor**     | FrankBKW                    |
 | **Plattform** | Windows 10/11, Server 2016+ |
@@ -573,7 +573,7 @@ Beispielinhalt einer Profil-Datei:
 
 | Version | Datum      | Highlights                                                                 |
 |---------|------------|----------------------------------------------------------------------------|
-| 1.2.9   | 2026-05-13 | Scan-Konfiguration: ⚙-Button mit Checkboxen pro Log-Gruppe + Scantiefe     |
+| 1.2.10   | 2026-05-13 | Scan-Konfiguration: ⚙-Button mit Checkboxen pro Log-Gruppe + Scantiefe     |
 | 1.2.8   | 2026-05-13 | Scan ohne MaxEvents-Limit (vollständige ID-Erkennung)                      |
 | 1.2.7   | 2026-05-13 | Benutzer-Spalte in allen Ergebnissen (SID → Name aufgelöst)                |
 | 1.2.5   | 2026-05-13 | Versionsnummer in Fenstern & EXE-Eigenschaften                             |
