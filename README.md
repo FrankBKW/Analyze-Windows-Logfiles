@@ -1,6 +1,6 @@
 # Windows Event Analyzer
 
-![Version](https://img.shields.io/badge/Version-1.2.15-blue)
+![Version](https://img.shields.io/badge/Version-1.2.16-blue)
 ![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue)
 ![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/Lizenz-Privat%20%2F%20IT--intern-orange)
@@ -9,7 +9,7 @@ Interaktives PowerShell-GUI-Tool zum Abfragen, Filtern und Auswerten von Windows
 
 | Eigenschaft   | Wert                        |
 |---------------|-----------------------------|
-| **Version**   | 1.2.15                       |
+| **Version**   | 1.2.16                       |
 | **Datum**     | 2026-05-13                  |
 | **Autor**     | FrankBKW                    |
 | **Plattform** | Windows 10/11, Server 2016+ |
@@ -573,6 +573,7 @@ Beispielinhalt einer Profil-Datei:
 
 | Version | Datum      | Highlights                                                                 |
 |---------|------------|----------------------------------------------------------------------------|
+| 1.2.16  | 2026-05-13 | Fix: Manifest-Checkbox-Label überragt nicht mehr den Panel-Rand                 |
 | 1.2.15  | 2026-05-13 | Fix: op_Multiply endgültig behoben – alle * durch Addition/[int]-Typen ersetzt  |
 | 1.2.14  | 2026-05-13 | Fix: Scanconfig erscheint beim Start vor der Scan/Überspringen-Auswahl          |
 | 1.2.13  | 2026-05-13 | Fix: op_Multiply-Fehler behoben; Scanconfig automatisch vor erstem Abfragen     |

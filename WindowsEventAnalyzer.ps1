@@ -1,6 +1,6 @@
 ﻿# ============================================================
 #  Windows Event Analyzer – Interaktives Abfrage-Tool
-#  Version  : 1.2.15
+#  Version  : 1.2.16
 #  Datum    : 2026-05-13
 #  Autor    : FrankBKW
 #  Anforderungen: Windows PowerShell 5.1 oder PowerShell 7+
@@ -81,7 +81,7 @@ function Resolve-EventUser {
 }
 
 # ── Versions-Info ────────────────────────────────────────────
-$script:AppVersion   = "1.2.15"
+$script:AppVersion   = "1.2.16"
 $script:AppBuildDate = "2026-05-13"
 $script:AppTitle     = "Windows Event Analyzer"
 
@@ -1348,12 +1348,12 @@ $txtComputer.ForeColor = $clrText
 $pnlOptions.Controls.Add($txtComputer)
 
 # Re-Scan Button + Einstellungen + Manifest-Option
-$btnRescan = New-StyledButton "Scan" 714 28 80 26 $false
+$btnRescan = New-StyledButton "Scan" 706 28 78 26 $false
 $pnlOptions.Controls.Add($btnRescan)
 
 $btnScanCfg = New-Object System.Windows.Forms.Button
 $btnScanCfg.Text      = [char]0x2699  # ⚙
-$btnScanCfg.Location  = New-Object System.Drawing.Point(800, 28)
+$btnScanCfg.Location  = New-Object System.Drawing.Point(788, 28)
 $btnScanCfg.Size      = New-Object System.Drawing.Size(26, 26)
 $btnScanCfg.FlatStyle = "Flat"
 $btnScanCfg.Font      = New-Object System.Drawing.Font("Segoe UI", 11)
@@ -1364,10 +1364,10 @@ $btnScanCfg.Add_Click({ Show-ScanSettings; $script:scanConfigShown = $true })
 $pnlOptions.Controls.Add($btnScanCfg)
 
 $chkManifest = New-Object System.Windows.Forms.CheckBox
-$chkManifest.Location = New-Object System.Drawing.Point(832, 30)
+$chkManifest.Location = New-Object System.Drawing.Point(818, 30)
 $chkManifest.Size     = New-Object System.Drawing.Size(18, 18)
 $pnlOptions.Controls.Add($chkManifest)
-$lblManifest = New-Label "Manifest" 852 32 52 16 $false $true
+$lblManifest = New-Label "Manifest" 838 32 44 16 $false $true
 $lblManifest.Font = $fontSmall
 $pnlOptions.Controls.Add($lblManifest)
 
