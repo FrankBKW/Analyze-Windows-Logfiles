@@ -6,6 +6,7 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 
 | Version | Datum      | Beschreibung                                                                     |
 |---------|------------|----------------------------------------------------------------------------------|
+| 1.2.11  | 2026-05-13 | Layout: Scan-Einstellungen überlappungsfrei; Ausgabefenster flexibel (Anchor)    |
 | 1.2.10  | 2026-05-13 | Fix: Scan-Einstellungen werden automatisch vor dem Scan angeboten                |
 | 1.2.9   | 2026-05-13 | Scan-Konfiguration: Checkboxen pro Log-Gruppe + Scantiefe (0=alle)               |
 | 1.2.8   | 2026-05-13 | Scan ohne MaxEvents-Limit (alle Events pro Log)                                  |
@@ -205,3 +206,4 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 - [2026-05-13 15:20:05] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-13 15:20:31] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-13 15:21:04] Bearbeitet: WindowsEventAnalyzer.ps1
+- [2026-05-13 15:21:33] Bearbeitet: CHANGELOG.md
