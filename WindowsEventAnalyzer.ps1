@@ -1,6 +1,6 @@
 ﻿# ============================================================
 #  Windows Event Analyzer – Interaktives Abfrage-Tool
-#  Version  : 1.2.8
+#  Version  : 1.2.9
 #  Datum    : 2026-05-13
 #  Autor    : FrankBKW
 #  Anforderungen: Windows PowerShell 5.1 oder PowerShell 7+
@@ -81,9 +81,36 @@ function Resolve-EventUser {
 }
 
 # ── Versions-Info ────────────────────────────────────────────
-$script:AppVersion   = "1.2.8"
+$script:AppVersion   = "1.2.9"
 $script:AppBuildDate = "2026-05-13"
 $script:AppTitle     = "Windows Event Analyzer"
+
+# ── Scan-Konfiguration ────────────────────────────────────────
+# Loggruppen → zugehörige Log-Pfade (Reihenfolge = Anzeigereihenfolge)
+$script:scanLogDefs = [ordered]@{
+    "System"           = @("System")
+    "Security"         = @("Security")
+    "Application"      = @("Application")
+    "PowerShell"       = @("Windows PowerShell","Microsoft-Windows-PowerShell/Operational")
+    "Defender"         = @("Microsoft-Windows-Windows Defender/Operational")
+    "WLAN"             = @("Microsoft-Windows-WLAN-AutoConfig/Operational")
+    "Task Scheduler"   = @("Microsoft-Windows-TaskScheduler/Operational")
+    "RDP"              = @("Microsoft-Windows-TerminalServices-LocalSessionManager/Operational",
+                           "Microsoft-Windows-TerminalServices-RemoteConnectionManager/Operational")
+    "Druckerdienst"    = @("Microsoft-Windows-PrintService/Operational")
+    "BitLocker"        = @("Microsoft-Windows-BitLocker/BitLocker Management")
+    "SMB Client"       = @("Microsoft-Windows-SmbClient/Operational")
+    "Andere Logs"      = @("__OTHER__")
+}
+
+# Welche Gruppen sind beim Scan aktiv (Security default OFF wegen Größe)
+$script:scanEnabled = @{}
+foreach ($grp in $script:scanLogDefs.Keys) {
+    $script:scanEnabled[$grp] = ($grp -ne "Security")
+}
+
+# Scantiefe: 0 = alle Events, >0 = MaxEvents pro Log
+$script:scanDepth = 0
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
@@ -438,6 +465,28 @@ function Invoke-ComputerEventScan {
                    Where-Object { $_.IsEnabled -and ($_.RecordCount -eq $null -or $_.RecordCount -gt 0) } |
                    Sort-Object { if ($_.RecordCount) { $_.RecordCount } else { 0 } } -Descending |
                    Select-Object -First $MaxLogs
+
+        # Nur aktivierte Log-Gruppen scannen
+        $enabledLogNames = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+        $includeOther    = $false
+        $knownLogNames   = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+        foreach ($grp in $script:scanLogDefs.Keys) {
+            foreach ($ln in $script:scanLogDefs[$grp]) {
+                if ($ln -ne "__OTHER__") { $knownLogNames.Add($ln) | Out-Null }
+            }
+            if ($script:scanEnabled[$grp]) {
+                foreach ($ln in $script:scanLogDefs[$grp]) {
+                    if ($ln -eq "__OTHER__") { $includeOther = $true }
+                    else { $enabledLogNames.Add($ln) | Out-Null }
+                }
+            }
+        }
+        $allLogs = $allLogs | Where-Object {
+            $ln = $_.LogName
+            if ($enabledLogNames.Contains($ln)) { return $true }
+            if ($includeOther -and -not $knownLogNames.Contains($ln)) { return $true }
+            return $false
+        }
     } catch {
         $script:scanListError = $_.Exception.Message
         $ProgressUI.LblMain.Text = "Fehler beim Auflisten der Logs: $($_.Exception.Message)"
@@ -469,6 +518,7 @@ function Invoke-ComputerEventScan {
                 LogName     = $log.LogName
                 ErrorAction = 'Stop'
             }
+            if ($script:scanDepth -gt 0) { $sampleParams.MaxEvents = $script:scanDepth }
             if (-not $isLocal) { $sampleParams.ComputerName = $Computer }
             if ($Credential -and -not $isLocal) { $sampleParams.Credential = $Credential }
             $sample = Get-WinEvent @sampleParams
@@ -512,6 +562,120 @@ function Invoke-ComputerEventScan {
     }
 
     return $found
+}
+
+function Show-ScanSettings {
+    $dlg = New-Object System.Windows.Forms.Form
+    $dlg.Text            = "Scan-Einstellungen"
+    $dlg.Size            = New-Object System.Drawing.Size(400, 470)
+    $dlg.StartPosition   = "CenterScreen"
+    $dlg.FormBorderStyle = "FixedDialog"
+    $dlg.MaximizeBox     = $false
+    $dlg.MinimizeBox     = $false
+    $dlg.BackColor       = [System.Drawing.Color]::FromArgb(245, 245, 250)
+    $dlg.Font            = New-Object System.Drawing.Font("Segoe UI", 9)
+    $dlg.TopMost         = $true
+    $dlg.Add_Shown({ $dlg.TopMost = $false; $dlg.Activate() })
+
+    # Überschrift Logs
+    $lblLogs = New-Object System.Windows.Forms.Label
+    $lblLogs.Text      = "Zu scannende Log-Gruppen:"
+    $lblLogs.Location  = New-Object System.Drawing.Point(12, 12)
+    $lblLogs.Size      = New-Object System.Drawing.Size(360, 18)
+    $lblLogs.Font      = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Bold)
+    $dlg.Controls.Add($lblLogs)
+
+    # Checkboxen in 2 Spalten
+    $groups = @($script:scanLogDefs.Keys)
+    $chkMap = @{}
+    $colWidth = 175
+    $rowH     = 26
+    $startY   = 36
+    $col2X    = 200
+
+    for ($i = 0; $i -lt $groups.Count; $i++) {
+        $grp = $groups[$i]
+        $col = if ($i % 2 -eq 0) { 12 } else { $col2X }
+        $row = [int]($i / 2)
+        $y   = $startY + $row * $rowH
+
+        $chk = New-Object System.Windows.Forms.CheckBox
+        $chk.Text      = $grp
+        $chk.Checked   = $script:scanEnabled[$grp]
+        $chk.Location  = New-Object System.Drawing.Point($col, $y)
+        $chk.Size      = New-Object System.Drawing.Size($colWidth, 22)
+        $dlg.Controls.Add($chk)
+        $chkMap[$grp] = $chk
+    }
+
+    # Trennlinie
+    $rows = [Math]::Ceiling($groups.Count / 2)
+    $sepY = $startY + $rows * $rowH + 4
+
+    $sep = New-Object System.Windows.Forms.Label
+    $sep.BorderStyle = "Fixed3D"
+    $sep.Location    = New-Object System.Drawing.Point(12, $sepY)
+    $sep.Size        = New-Object System.Drawing.Size(360, 2)
+    $dlg.Controls.Add($sep)
+
+    # Scantiefe
+    $depthY = $sepY + 10
+
+    $lblDepth = New-Object System.Windows.Forms.Label
+    $lblDepth.Text     = "Scantiefe (Events pro Log):"
+    $lblDepth.Location = New-Object System.Drawing.Point(12, $depthY)
+    $lblDepth.Size     = New-Object System.Drawing.Size(200, 20)
+    $dlg.Controls.Add($lblDepth)
+
+    $txtDepth = New-Object System.Windows.Forms.TextBox
+    $txtDepth.Text     = if ($script:scanDepth -eq 0) { "0" } else { [string]$script:scanDepth }
+    $txtDepth.Location = New-Object System.Drawing.Point(220, ($depthY - 2))
+    $txtDepth.Size     = New-Object System.Drawing.Size(80, 22)
+    $dlg.Controls.Add($txtDepth)
+
+    $lblHint = New-Object System.Windows.Forms.Label
+    $lblHint.Text      = "0 = alle Events (kein Limit)"
+    $lblHint.Location  = New-Object System.Drawing.Point(12, ($depthY + 22))
+    $lblHint.Size      = New-Object System.Drawing.Size(360, 16)
+    $lblHint.Font      = New-Object System.Drawing.Font("Segoe UI", 8)
+    $lblHint.ForeColor = [System.Drawing.Color]::FromArgb(110, 110, 140)
+    $dlg.Controls.Add($lblHint)
+
+    # Buttons
+    $btnY = $dlg.ClientSize.Height - 44
+    $btnOK = New-Object System.Windows.Forms.Button
+    $btnOK.Text      = "OK"
+    $btnOK.Location  = New-Object System.Drawing.Point(200, $btnY)
+    $btnOK.Size      = New-Object System.Drawing.Size(80, 28)
+    $btnOK.BackColor = [System.Drawing.Color]::FromArgb(74, 74, 170)
+    $btnOK.ForeColor = [System.Drawing.Color]::White
+    $btnOK.FlatStyle = "Flat"
+    $btnOK.FlatAppearance.BorderSize = 0
+    $dlg.Controls.Add($btnOK)
+
+    $btnCancel = New-Object System.Windows.Forms.Button
+    $btnCancel.Text      = "Abbrechen"
+    $btnCancel.Location  = New-Object System.Drawing.Point(292, $btnY)
+    $btnCancel.Size      = New-Object System.Drawing.Size(80, 28)
+    $btnCancel.FlatStyle = "Flat"
+    $dlg.Controls.Add($btnCancel)
+
+    $btnOK.Add_Click({
+        foreach ($grp in $chkMap.Keys) {
+            $script:scanEnabled[$grp] = $chkMap[$grp].Checked
+        }
+        $d = 0
+        if ([int]::TryParse($txtDepth.Text.Trim(), [ref]$d) -and $d -ge 0) {
+            $script:scanDepth = $d
+        }
+        $dlg.DialogResult = "OK"
+        $dlg.Close()
+    })
+    $btnCancel.Add_Click({ $dlg.DialogResult = "Cancel"; $dlg.Close() })
+    $dlg.AcceptButton = $btnOK
+    $dlg.CancelButton = $btnCancel
+
+    $dlg.ShowDialog() | Out-Null
 }
 
 function Show-CopyableDialog {
@@ -1162,15 +1326,27 @@ $txtComputer.Text      = $env:COMPUTERNAME
 $txtComputer.ForeColor = $clrText
 $pnlOptions.Controls.Add($txtComputer)
 
-# Re-Scan Button + Manifest-Option
+# Re-Scan Button + Einstellungen + Manifest-Option
 $btnRescan = New-StyledButton "Scan" 714 28 80 26 $false
 $pnlOptions.Controls.Add($btnRescan)
 
+$btnScanCfg = New-Object System.Windows.Forms.Button
+$btnScanCfg.Text      = [char]0x2699  # ⚙
+$btnScanCfg.Location  = New-Object System.Drawing.Point(800, 28)
+$btnScanCfg.Size      = New-Object System.Drawing.Size(26, 26)
+$btnScanCfg.FlatStyle = "Flat"
+$btnScanCfg.Font      = New-Object System.Drawing.Font("Segoe UI", 11)
+$btnScanCfg.FlatAppearance.BorderSize  = 1
+$btnScanCfg.BackColor = [System.Drawing.Color]::FromArgb(230, 230, 245)
+$btnScanCfg.ForeColor = [System.Drawing.Color]::FromArgb(74, 74, 170)
+$btnScanCfg.Add_Click({ Show-ScanSettings })
+$pnlOptions.Controls.Add($btnScanCfg)
+
 $chkManifest = New-Object System.Windows.Forms.CheckBox
-$chkManifest.Location = New-Object System.Drawing.Point(800, 30)
+$chkManifest.Location = New-Object System.Drawing.Point(832, 30)
 $chkManifest.Size     = New-Object System.Drawing.Size(18, 18)
 $pnlOptions.Controls.Add($chkManifest)
-$lblManifest = New-Label "Manifest" 820 32 52 16 $false $true
+$lblManifest = New-Label "Manifest" 852 32 52 16 $false $true
 $lblManifest.Font = $fontSmall
 $pnlOptions.Controls.Add($lblManifest)
 
