@@ -1,6 +1,6 @@
 ﻿# ============================================================
 #  Windows Event Analyzer – Interaktives Abfrage-Tool
-#  Version  : 1.2.11
+#  Version  : 1.2.12
 #  Datum    : 2026-05-13
 #  Autor    : FrankBKW
 #  Anforderungen: Windows PowerShell 5.1 oder PowerShell 7+
@@ -81,7 +81,7 @@ function Resolve-EventUser {
 }
 
 # ── Versions-Info ────────────────────────────────────────────
-$script:AppVersion   = "1.2.11"
+$script:AppVersion   = "1.2.12"
 $script:AppBuildDate = "2026-05-13"
 $script:AppTitle     = "Windows Event Analyzer"
 
@@ -2835,40 +2835,31 @@ $($diag -join "`n")
     $lblFil = New-Label "Suche:" 8 12 55 20 $true
     $pnlFilter.Controls.Add($lblFil)
 
-    # Anker-Konstanten für diesen Block
-    $ancLR  = [System.Windows.Forms.AnchorStyles]::Top  -bor [System.Windows.Forms.AnchorStyles]::Left  -bor [System.Windows.Forms.AnchorStyles]::Right
-    $ancR   = [System.Windows.Forms.AnchorStyles]::Top  -bor [System.Windows.Forms.AnchorStyles]::Right
-
+    # Suchfeld – wächst, Breite wird im Resize-Handler gesetzt
     $txtFilter = New-Object System.Windows.Forms.TextBox
-    $txtFilter.Location    = New-Object System.Drawing.Point(68, 10)
-    $txtFilter.Size        = New-Object System.Drawing.Size(280, 22)
-    $txtFilter.Anchor      = $ancLR   # wächst mit Fensterbreite
-    $txtFilter.Font        = $fontNormal
-    $txtFilter.ForeColor   = $clrMuted
-    $txtFilter.Text        = "Suche in ID, Quelle, Nachricht..."
+    $txtFilter.Location  = New-Object System.Drawing.Point(68, 10)
+    $txtFilter.Size      = New-Object System.Drawing.Size(300, 22)
+    $txtFilter.Font      = $fontNormal
+    $txtFilter.ForeColor = $clrMuted
+    $txtFilter.Text      = "Suche in ID, Quelle, Nachricht..."
     $pnlFilter.Controls.Add($txtFilter)
 
     $txtFilter.Add_Enter({
         if ($txtFilter.Text -eq "Suche in ID, Quelle, Nachricht...") {
-            $txtFilter.Text = ""
-            $txtFilter.ForeColor = $clrText
+            $txtFilter.Text = ""; $txtFilter.ForeColor = $clrText
         }
     })
     $txtFilter.Add_Leave({
         if ($txtFilter.Text -eq "") {
-            $txtFilter.Text = "Suche in ID, Quelle, Nachricht..."
-            $txtFilter.ForeColor = $clrMuted
+            $txtFilter.Text = "Suche in ID, Quelle, Nachricht..."; $txtFilter.ForeColor = $clrMuted
         }
     })
 
-    # Typ-Filter (bleibt rechts verankert)
-    $lblTyp = New-Label "Typ:" 425 12 35 20
-    $lblTyp.Anchor = $ancR
+    # Rechte Filter-Gruppe (ohne Anchor – Resize-Handler positioniert sie)
+    $lblTyp = New-Label "Typ:" 0 13 32 18
     $pnlFilter.Controls.Add($lblTyp)
     $cbTypFilter = New-Object System.Windows.Forms.ComboBox
-    $cbTypFilter.Location      = New-Object System.Drawing.Point(465, 10)
-    $cbTypFilter.Size          = New-Object System.Drawing.Size(120, 22)
-    $cbTypFilter.Anchor        = $ancR
+    $cbTypFilter.Size          = New-Object System.Drawing.Size(110, 22)
     $cbTypFilter.DropDownStyle = "DropDownList"
     $cbTypFilter.Font          = $fontNormal
     @("Alle","Critical","Error","Warning","Information","Verbose") |
@@ -2876,14 +2867,10 @@ $($diag -join "`n")
     $cbTypFilter.SelectedIndex = 0
     $pnlFilter.Controls.Add($cbTypFilter)
 
-    # Protokoll-Filter
-    $lblProt = New-Label "Protokoll:" 565 12 70 20
-    $lblProt.Anchor = $ancR
+    $lblProt = New-Label "Protokoll:" 0 13 66 18
     $pnlFilter.Controls.Add($lblProt)
     $cbLogFilter = New-Object System.Windows.Forms.ComboBox
-    $cbLogFilter.Location      = New-Object System.Drawing.Point(638, 10)
-    $cbLogFilter.Size          = New-Object System.Drawing.Size(105, 22)
-    $cbLogFilter.Anchor        = $ancR
+    $cbLogFilter.Size          = New-Object System.Drawing.Size(110, 22)
     $cbLogFilter.DropDownStyle = "DropDownList"
     $cbLogFilter.Font          = $fontNormal
     $cbLogFilter.Items.Add("Alle") | Out-Null
@@ -2892,14 +2879,10 @@ $($diag -join "`n")
     $cbLogFilter.SelectedIndex = 0
     $pnlFilter.Controls.Add($cbLogFilter)
 
-    # Computer-Filter
-    $lblComp = New-Label "Computer:" 750 12 68 20
-    $lblComp.Anchor = $ancR
+    $lblComp = New-Label "Computer:" 0 13 66 18
     $pnlFilter.Controls.Add($lblComp)
     $cbCompFilter = New-Object System.Windows.Forms.ComboBox
-    $cbCompFilter.Location      = New-Object System.Drawing.Point(820, 10)
     $cbCompFilter.Size          = New-Object System.Drawing.Size(130, 22)
-    $cbCompFilter.Anchor        = $ancR
     $cbCompFilter.DropDownStyle = "DropDownList"
     $cbCompFilter.Font          = $fontNormal
     $cbCompFilter.Items.Add("Alle") | Out-Null
@@ -2908,10 +2891,33 @@ $($diag -join "`n")
     $cbCompFilter.SelectedIndex = 0
     $pnlFilter.Controls.Add($cbCompFilter)
 
-    # Ergebnis-Zähler (ganz rechts)
-    $lblCount = New-Label "" 960 12 145 20 $false $true
-    $lblCount.Anchor = $ancR
+    $lblCount = New-Label "" 0 13 110 18 $false $true
     $pnlFilter.Controls.Add($lblCount)
+
+    # Resize-Handler: positioniert rechte Controls von rechts nach links
+    $filterLayoutScript = {
+        $W = $pnlFilter.ClientSize.Width
+        $gap = 6; $pad = 8; $y = 10; $yL = 13
+        $x = $W - $pad - 110
+        $lblCount.Location     = New-Object System.Drawing.Point($x, $yL)
+        $x -= 130 + $gap
+        $cbCompFilter.Location = New-Object System.Drawing.Point($x, $y)
+        $x -= 66 + $gap
+        $lblComp.Location      = New-Object System.Drawing.Point($x, $yL)
+        $x -= 110 + $gap
+        $cbLogFilter.Location  = New-Object System.Drawing.Point($x, $y)
+        $x -= 66 + $gap
+        $lblProt.Location      = New-Object System.Drawing.Point($x, $yL)
+        $x -= 110 + $gap
+        $cbTypFilter.Location  = New-Object System.Drawing.Point($x, $y)
+        $x -= 32 + $gap
+        $lblTyp.Location       = New-Object System.Drawing.Point($x, $yL)
+        # Suchfeld bis zur ersten rechten Gruppe (mit 10px Puffer)
+        $txtFilter.Width       = [Math]::Max(80, $x - 68 - 10)
+    }
+    $pnlFilter.Add_Resize($filterLayoutScript)
+    # Einmalig nach dem Laden ausführen
+    $formOut.Add_Shown({ & $filterLayoutScript })
 
     # ── Zeile 2: Aktions-Buttons ─────────────────────────────────
     $btnExport      = New-StyledButton "CSV-Export"   8   44 100 24 $false
@@ -2959,16 +2965,15 @@ $($diag -join "`n")
 
     # Spalten definieren
     $cols = @(
-        @{Name="Computer";     Width=100; Fill=$false}
-        @{Name="Zeit";         Width=135; Fill=$false}
-        @{Name="Typ";          Width=80;  Fill=$false}
-        @{Name="Protokoll";    Width=85;  Fill=$false}
-        @{Name="EventID";      Width=65;  Fill=$false}
-        @{Name="Benutzer";     Width=130; Fill=$false}
-        @{Name="Kategorie";    Width=90;  Fill=$false}
-        @{Name="Quelle";       Width=150; Fill=$false}
-        @{Name="Beschreibung"; Width=185; Fill=$false}
-        @{Name="Nachricht";    Width=0;   Fill=$true}
+        @{Name="Computer";  Width=100; Fill=$false}
+        @{Name="Zeit";      Width=135; Fill=$false}
+        @{Name="Typ";       Width=80;  Fill=$false}
+        @{Name="Protokoll"; Width=85;  Fill=$false}
+        @{Name="EventID";   Width=65;  Fill=$false}
+        @{Name="Benutzer";  Width=130; Fill=$false}
+        @{Name="Kategorie"; Width=90;  Fill=$false}
+        @{Name="Quelle";    Width=150; Fill=$false}
+        @{Name="Nachricht"; Width=400; Fill=$false}
     )
     foreach ($col in $cols) {
         $c = New-Object System.Windows.Forms.DataGridViewTextBoxColumn
@@ -3012,7 +3017,6 @@ $($diag -join "`n")
                 $r.Benutzer,
                 $r.Kategorie,
                 $r.Quelle,
-                $r.Beschr,
                 $r.Nachricht
             ) | Out-Null
         }
@@ -3082,7 +3086,6 @@ $($diag -join "`n")
                       "Benutzer:    $($row.Cells['Benutzer'].Value)`n" +
                       "Quelle:      $($row.Cells['Quelle'].Value)`n" +
                       "Kategorie:   $($row.Cells['Kategorie'].Value)`n" +
-                      "Beschr.:     $($row.Cells['Beschreibung'].Value)`n`n" +
                       "--- Vollständige Nachricht ---`n" +
                       $row.Cells["Nachricht"].Value
             [System.Windows.Forms.MessageBox]::Show($detail, "Event-Detail", "OK", "Information") | Out-Null
@@ -3128,10 +3131,10 @@ $($diag -join "`n")
             $ws.Name = "Events"
 
             # Header
-            $headers = @("Computer","Zeit","Typ","Protokoll","EventID","Benutzer","Kategorie","Quelle","Beschreibung","Nachricht")
+            $headers = @("Computer","Zeit","Typ","Protokoll","EventID","Benutzer","Kategorie","Quelle","Nachricht")
             for ($col = 0; $col -lt $headers.Count; $col++) {
-                $ws.Cells.Item(1, $col+1)                    = $headers[$col]
-                $ws.Cells.Item(1, $col+1).Font.Bold          = $true
+                $ws.Cells.Item(1, $col+1)                     = $headers[$col]
+                $ws.Cells.Item(1, $col+1).Font.Bold           = $true
                 $ws.Cells.Item(1, $col+1).Interior.ColorIndex = 37
             }
 
@@ -3146,8 +3149,7 @@ $($diag -join "`n")
                 $ws.Cells.Item($rowNum, 6) = $r.Benutzer
                 $ws.Cells.Item($rowNum, 7) = $r.Kategorie
                 $ws.Cells.Item($rowNum, 8) = $r.Quelle
-                $ws.Cells.Item($rowNum, 9) = $r.Beschr
-                $ws.Cells.Item($rowNum,10) = $r.Nachricht
+                $ws.Cells.Item($rowNum, 9) = $r.Nachricht
                 # Zeilenfarbe nach Typ
                 $ci = switch ($r.Typ) {
                     "Critical" { 3 }   # rot
@@ -3156,14 +3158,14 @@ $($diag -join "`n")
                     default    { 0 }   # keine
                 }
                 if ($ci -gt 0) {
-                    $ws.Range($ws.Cells.Item($rowNum,1), $ws.Cells.Item($rowNum,10)).Interior.ColorIndex = $ci
+                    $ws.Range($ws.Cells.Item($rowNum,1), $ws.Cells.Item($rowNum,9)).Interior.ColorIndex = $ci
                 }
                 $rowNum++
             }
 
             $ws.Columns.AutoFit() | Out-Null
             # Nachricht-Spalte auf max. 80 Zeichen
-            if ($ws.Columns.Item(10).ColumnWidth -gt 80) { $ws.Columns.Item(10).ColumnWidth = 80 }
+            if ($ws.Columns.Item(9).ColumnWidth -gt 80) { $ws.Columns.Item(9).ColumnWidth = 80 }
 
             $wb.SaveAs($dlg.FileName, 51)  # 51 = xlOpenXMLWorkbook
             $wb.Close($false)
