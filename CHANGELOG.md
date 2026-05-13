@@ -6,6 +6,9 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 
 | Version | Datum      | Beschreibung                                                                     |
 |---------|------------|----------------------------------------------------------------------------------|
+| 1.2.9   | 2026-05-13 | Scan-Konfiguration: Checkboxen pro Log-Gruppe + Scantiefe (0=alle)               |
+| 1.2.8   | 2026-05-13 | Scan ohne MaxEvents-Limit (alle Events pro Log)                                  |
+| 1.2.7   | 2026-05-13 | Benutzer-Spalte in allen Ergebnissen (SID → Name, Fallback auf rohe SID)         |
 | 1.2.6   | 2026-05-13 | Benutzer-Spalte in allen Ergebnissen (SID → Name, Fallback auf rohe SID)         |
 | 1.2.5   | 2026-05-13 | Versionsnummer in Fenstertitel, Titelleiste und EXE-Eigenschaften                |
 | 1.2.4   | 2026-05-13 | Fix: Beschreibung ≠ Nachricht; Fenster nicht mehr dauerhaft TopMost              |
@@ -177,3 +180,4 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 - [2026-05-13 09:56:52] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-13 09:57:12] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-13 09:57:27] Bearbeitet: WindowsEventAnalyzer.ps1
+- [2026-05-13 09:57:50] Bearbeitet: CHANGELOG.md
