@@ -6,6 +6,7 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 
 | Version | Datum      | Beschreibung                                                                     |
 |---------|------------|----------------------------------------------------------------------------------|
+| 1.2.6   | 2026-05-13 | Benutzer-Spalte in allen Ergebnissen (SID → Name, Fallback auf rohe SID)         |
 | 1.2.5   | 2026-05-13 | Versionsnummer in Fenstertitel, Titelleiste und EXE-Eigenschaften                |
 | 1.2.4   | 2026-05-13 | Fix: Beschreibung ≠ Nachricht; Fenster nicht mehr dauerhaft TopMost              |
 | 1.2.3   | 2026-05-13 | Fix: Beschreibung aus echter Event-Nachricht statt statischem Katalog            |
@@ -158,3 +159,4 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 - [2026-05-13 08:11:05] Bearbeitet: README.md
 - [2026-05-13 08:11:20] Bearbeitet: README.md
 - [2026-05-13 08:11:37] Bearbeitet: README.md
+- [2026-05-13 08:11:59] Bearbeitet: CHANGELOG.md
