@@ -181,3 +181,5 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 - [2026-05-13 09:57:12] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-13 09:57:27] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-13 09:57:50] Bearbeitet: CHANGELOG.md
+- [2026-05-13 09:58:00] feat: Scan-Konfiguration - Checkboxen pro Log-Gruppe und Scantiefe-Eingabe (Einstellungen-Dialog per ⚙-Button)
+- [2026-05-13 09:58:15] Bearbeitet: CHANGELOG.md
