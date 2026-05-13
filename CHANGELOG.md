@@ -160,3 +160,4 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 - [2026-05-13 08:11:20] Bearbeitet: README.md
 - [2026-05-13 08:11:37] Bearbeitet: README.md
 - [2026-05-13 08:11:59] Bearbeitet: CHANGELOG.md
+- [2026-05-13 08:24:06] Bearbeitet: WindowsEventAnalyzer.ps1
