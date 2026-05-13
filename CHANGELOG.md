@@ -245,3 +245,4 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 - [2026-05-13 17:39:21] Bearbeitet: WindowsEventAnalyzer.ps1
 - [2026-05-13 17:39:53] Bearbeitet: CHANGELOG.md
 - [2026-05-13 17:40:15] Bearbeitet: README.md
+- [2026-05-13 17:40:36] Bearbeitet: README.md
