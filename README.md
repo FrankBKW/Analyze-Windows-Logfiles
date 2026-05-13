@@ -1,6 +1,6 @@
 # Windows Event Analyzer
 
-![Version](https://img.shields.io/badge/Version-1.2.5-blue)
+![Version](https://img.shields.io/badge/Version-1.2.6-blue)
 ![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue)
 ![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/Lizenz-Privat%20%2F%20IT--intern-orange)
@@ -9,7 +9,7 @@ Interaktives PowerShell-GUI-Tool zum Abfragen, Filtern und Auswerten von Windows
 
 | Eigenschaft   | Wert                        |
 |---------------|-----------------------------|
-| **Version**   | 1.2.5                       |
+| **Version**   | 1.2.6                       |
 | **Datum**     | 2026-05-13                  |
 | **Autor**     | FrankBKW                    |
 | **Plattform** | Windows 10/11, Server 2016+ |
@@ -573,7 +573,8 @@ Beispielinhalt einer Profil-Datei:
 
 | Version | Datum      | Highlights                                                                 |
 |---------|------------|----------------------------------------------------------------------------|
-| 1.2.5   | 2026-05-13 | Versionsnummer in Fenstern & EXE-Eigenschaften; Beschreibung aus erstem Zeile der echten Event-Nachricht |
+| 1.2.6   | 2026-05-13 | Benutzer-Spalte in allen Ergebnissen (SID → Name aufgelöst)                |
+| 1.2.5   | 2026-05-13 | Versionsnummer in Fenstern & EXE-Eigenschaften                             |
 | 1.2.4   | 2026-05-13 | Fix: Beschreibung ≠ Nachricht (falscher Split auf `$short`); Fenster nicht mehr dauerhaft TopMost |
 | 1.2.3   | 2026-05-13 | Fix: Beschreibung immer aus echter Event-Nachricht, nicht aus statischem Katalog |
 | 1.2.2   | 2026-05-12 | Fix: Nachricht nicht mehr auf 300 Zeichen abgeschnitten                    |

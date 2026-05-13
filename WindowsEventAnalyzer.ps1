@@ -1,6 +1,6 @@
 ﻿# ============================================================
 #  Windows Event Analyzer – Interaktives Abfrage-Tool
-#  Version  : 1.2.5
+#  Version  : 1.2.6
 #  Datum    : 2026-05-13
 #  Autor    : FrankBKW
 #  Anforderungen: Windows PowerShell 5.1 oder PowerShell 7+
@@ -64,8 +64,27 @@ if (-not $_principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administr
 }
 Remove-Variable _principal
 
+# ── Benutzer aus Event-SID auflösen ──────────────────────────
+function Resolve-EventUser {
+    param($WinEvent)
+    if (-not $WinEvent.UserId) { return "-" }
+    try {
+        return $WinEvent.UserId.Translate([System.Security.Principal.NTAccount]).Value
+    } catch {
+        # SID nicht auflösbar (z.B. gelöschtes Konto, kein DC erreichbar) → rohe SID zeigen
+        $sid = $WinEvent.UserId.Value
+        # Bekannte System-SIDs lesbar machen
+        return switch ($sid) {
+            "S-1-5-18"  { "SYSTEM" }
+            "S-1-5-19"  { "LOCAL SERVICE" }
+            "S-1-5-20"  { "NETWORK SERVICE" }
+            default     { $sid }
+        }
+    }
+}
+
 # ── Versions-Info ────────────────────────────────────────────
-$script:AppVersion   = "1.2.5"
+$script:AppVersion   = "1.2.6"
 $script:AppBuildDate = "2026-05-13"
 $script:AppTitle     = "Windows Event Analyzer"
 
@@ -2047,6 +2066,7 @@ $btnXPath.Add_Click({
                     Zeit      = $r.TimeCreated; Typ = $typ
                     Protokoll = Get-LogShortLabel $xLog; LogVoll = $xLog
                     EventID   = $r.Id; Quelle = $r.ProviderName
+                    Benutzer  = Resolve-EventUser $r
                     Kategorie = if ($meta) { $meta.Category } else { "-" }
                     Beschr    = $descValX
                     Nachricht = $short
@@ -2221,7 +2241,7 @@ $btnXPath.Add_Click({
                     $xls.Visible = $false; $xls.DisplayAlerts = $false
                     $wb  = $xls.Workbooks.Add()
                     $ws  = $wb.Worksheets.Item(1); $ws.Name = "XPath-Events"
-                    $headers = @("Computer","Zeit","Typ","Protokoll","EventID","Kategorie","Quelle","Beschreibung","Nachricht")
+                    $headers = @("Computer","Zeit","Typ","Protokoll","EventID","Benutzer","Kategorie","Quelle","Beschreibung","Nachricht")
                     for ($hc = 0; $hc -lt $headers.Count; $hc++) {
                         $ws.Cells.Item(1, $hc+1) = $headers[$hc]
                         $ws.Cells.Item(1, $hc+1).Font.Bold = $true
@@ -2233,10 +2253,11 @@ $btnXPath.Add_Click({
                         $ws.Cells.Item($row,3) = $r.Typ
                         $ws.Cells.Item($row,4) = $r.Protokoll
                         $ws.Cells.Item($row,5) = $r.EventID
-                        $ws.Cells.Item($row,6) = $r.Kategorie
-                        $ws.Cells.Item($row,7) = $r.Quelle
-                        $ws.Cells.Item($row,8) = $r.Beschr
-                        $ws.Cells.Item($row,9) = $r.Nachricht
+                        $ws.Cells.Item($row,6) = $r.Benutzer
+                        $ws.Cells.Item($row,7) = $r.Kategorie
+                        $ws.Cells.Item($row,8) = $r.Quelle
+                        $ws.Cells.Item($row,9) = $r.Beschr
+                        $ws.Cells.Item($row,10) = $r.Nachricht
                         $row++
                     }
                     $ws.Columns.AutoFit() | Out-Null
@@ -2468,6 +2489,7 @@ $btnAbfragen.Add_Click({
                             LogVoll   = $logName
                             EventID   = $r.Id
                             Quelle    = $r.ProviderName
+                            Benutzer  = Resolve-EventUser $r
                             Kategorie = if ($meta) { $meta.Category } else { "" }
                             Beschr    = $descVal
                             Nachricht = $short
@@ -2720,6 +2742,7 @@ $($diag -join "`n")
         @{Name="Typ";          Width=80;  Fill=$false}
         @{Name="Protokoll";    Width=85;  Fill=$false}
         @{Name="EventID";      Width=65;  Fill=$false}
+        @{Name="Benutzer";     Width=130; Fill=$false}
         @{Name="Kategorie";    Width=90;  Fill=$false}
         @{Name="Quelle";       Width=150; Fill=$false}
         @{Name="Beschreibung"; Width=185; Fill=$false}
@@ -2764,6 +2787,7 @@ $($diag -join "`n")
                 $r.Typ,
                 $r.Protokoll,
                 $r.EventID,
+                $r.Benutzer,
                 $r.Kategorie,
                 $r.Quelle,
                 $r.Beschr,
@@ -2830,6 +2854,7 @@ $($diag -join "`n")
                       "Typ:         $($row.Cells['Typ'].Value)`n" +
                       "Protokoll:   $($row.Cells['Protokoll'].Value)`n" +
                       "Event-ID:    $($row.Cells['EventID'].Value)`n" +
+                      "Benutzer:    $($row.Cells['Benutzer'].Value)`n" +
                       "Quelle:      $($row.Cells['Quelle'].Value)`n" +
                       "Kategorie:   $($row.Cells['Kategorie'].Value)`n" +
                       "Beschr.:     $($row.Cells['Beschreibung'].Value)`n`n" +
@@ -2878,7 +2903,7 @@ $($diag -join "`n")
             $ws.Name = "Events"
 
             # Header
-            $headers = @("Computer","Zeit","Typ","Protokoll","EventID","Kategorie","Quelle","Beschreibung","Nachricht")
+            $headers = @("Computer","Zeit","Typ","Protokoll","EventID","Benutzer","Kategorie","Quelle","Beschreibung","Nachricht")
             for ($col = 0; $col -lt $headers.Count; $col++) {
                 $ws.Cells.Item(1, $col+1)                    = $headers[$col]
                 $ws.Cells.Item(1, $col+1).Font.Bold          = $true
@@ -2893,10 +2918,11 @@ $($diag -join "`n")
                 $ws.Cells.Item($rowNum, 3) = $r.Typ
                 $ws.Cells.Item($rowNum, 4) = $r.Protokoll
                 $ws.Cells.Item($rowNum, 5) = $r.EventID
-                $ws.Cells.Item($rowNum, 6) = $r.Kategorie
-                $ws.Cells.Item($rowNum, 7) = $r.Quelle
-                $ws.Cells.Item($rowNum, 8) = $r.Beschr
-                $ws.Cells.Item($rowNum, 9) = $r.Nachricht
+                $ws.Cells.Item($rowNum, 6) = $r.Benutzer
+                $ws.Cells.Item($rowNum, 7) = $r.Kategorie
+                $ws.Cells.Item($rowNum, 8) = $r.Quelle
+                $ws.Cells.Item($rowNum, 9) = $r.Beschr
+                $ws.Cells.Item($rowNum,10) = $r.Nachricht
                 # Zeilenfarbe nach Typ
                 $ci = switch ($r.Typ) {
                     "Critical" { 3 }   # rot
@@ -2905,14 +2931,14 @@ $($diag -join "`n")
                     default    { 0 }   # keine
                 }
                 if ($ci -gt 0) {
-                    $ws.Range($ws.Cells.Item($rowNum,1), $ws.Cells.Item($rowNum,9)).Interior.ColorIndex = $ci
+                    $ws.Range($ws.Cells.Item($rowNum,1), $ws.Cells.Item($rowNum,10)).Interior.ColorIndex = $ci
                 }
                 $rowNum++
             }
 
             $ws.Columns.AutoFit() | Out-Null
             # Nachricht-Spalte auf max. 80 Zeichen
-            if ($ws.Columns.Item(9).ColumnWidth -gt 80) { $ws.Columns.Item(9).ColumnWidth = 80 }
+            if ($ws.Columns.Item(10).ColumnWidth -gt 80) { $ws.Columns.Item(10).ColumnWidth = 80 }
 
             $wb.SaveAs($dlg.FileName, 51)  # 51 = xlOpenXMLWorkbook
             $wb.Close($false)
@@ -3060,6 +3086,7 @@ $($diag -join "`n")
                                 Zeit = $r.TimeCreated; Typ = $typ
                                 Protokoll = Get-LogShortLabel $logName; LogVoll = $logName
                                 EventID = $r.Id; Quelle = $r.ProviderName
+                                Benutzer  = Resolve-EventUser $r
                                 Kategorie = if ($meta) { $meta.Category } else { "" }
                                 Beschr    = $descValL
                                 Nachricht = $short
