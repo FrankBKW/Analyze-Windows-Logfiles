@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"C:\\Claude\\Analyze-Windows-Logfiles\\.claude\\regen_pdf_hook.ps1\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
