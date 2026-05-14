@@ -270,3 +270,4 @@ Alle Änderungen werden automatisch von Claude Code eingetragen.
 - [2026-05-14 09:38:40] Erstellt: make_readme_pdf.py
 - [2026-05-14 09:58:42] Erstellt: .claude\regen_pdf_hook.ps1
 - [2026-05-14 09:59:20] Erstellt: .claude\settings.json
+- [2026-05-14 10:12:36] Bearbeitet: .claude\settings.json
